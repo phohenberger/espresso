@@ -18,7 +18,7 @@ For some reason google chrome crashes the first time the visualizer is
 initialized. To fix this simply run the simulation again while the browser
 where it previously crashed is still open.
 
-(Especially chrome)
+(Especially chrome has this problem)
 
 ----------------
 -- How to use --                                                                                                                                                                                                                    vis = visualizer_zndraw.setup_vis()
