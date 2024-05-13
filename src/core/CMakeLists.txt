@@ -96,6 +96,13 @@ if(ESPRESSO_BUILD_WITH_WALBERLA)
             $<$<BOOL:${ESPRESSO_BUILD_WITH_CUDA}>:espresso::walberla_cuda>)
 endif()
 
+if(ESPRESSO_BUILD_WITH_KOKKOS)
+  target_link_libraries(
+    espresso_core PRIVATE Cabana::Core
+  )
+  #target_link_libraries(espresso_core PRIVATE Kokkos::kokkos)
+endif()
+
 add_subdirectory(accumulators)
 add_subdirectory(analysis)
 add_subdirectory(bond_breakage)

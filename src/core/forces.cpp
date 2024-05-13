@@ -24,6 +24,8 @@
  *  The corresponding header file is forces.hpp.
  */
 
+#include <Cabana_Core.hpp>
+
 #include "BoxGeometry.hpp"
 #include "Particle.hpp"
 #include "ParticleRange.hpp"
@@ -168,7 +170,25 @@ void System::System::calculate_forces() {
 #else
   auto const dipole_cutoff = INACTIVE_CUTOFF;
 #endif
+    
+  bool short_range_with_soa = true;
+  if (short_range_with_soa) {
 
+    Kokkos::initialize();
+
+    using data_types = Cabana::MemberTypes<double[3], int>;
+
+    using memory_space = Kokkos::HostSpace;
+  
+    const int total_particles = particles.size() + ghost_particles.size();
+    
+    //std::cout << "ghost" << ghost_particles.size() << "particles" << particles.size() << "total" << total_particles;
+
+    const unsigned long int vector_length  = 128;
+
+    Cabana::AoSoA<data_types, memory_space, vector_length> aosoa_particles( "test", total_particles );
+  }
+  
   short_range_loop(
       [coulomb_kernel_ptr = get_ptr(coulomb_kernel),
        &bond_breakage = *bond_breakage, &box_geo = *box_geo](
