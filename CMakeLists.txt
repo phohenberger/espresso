@@ -266,17 +266,23 @@ endif()
 if(ESPRESSO_BUILD_WITH_CABANA)
   set(Kokkos_DIR "/tikhome/phohenberger/packages/kokkos/build")
   # This only a workaround for when you cant install kokkos
+  
   find_package(Kokkos REQUIRED)
-  if (cabana installed)
-    include(FetchContent)
+
+  include(FetchContent)
+  if(EXISTS "${CMAKE_BINARY_DIR}/_deps/cabana-build")
+    FetchContent_Declare(cabana
+      GIT_REPOSITORY https://github.com/ECP-copa/Cabana.git
+      GIT_TAG 07573782590e223edc6e5f83ec0807be5941df14
+    )
+  else()# Fix cabana doxygen conflict until it is fixed upstream
     FetchContent_Declare(cabana
       GIT_REPOSITORY https://github.com/ECP-copa/Cabana.git
       GIT_TAG 07573782590e223edc6e5f83ec0807be5941df14
       PATCH_COMMAND patch -N --reject-file=- -i "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_cabana_doxygen.diff" 
-      # Fix cabana doxygen conflict until it is fixed upstream
     )
-    FetchContent_MakeAvailable(cabana)
   endif()
+  FetchContent_MakeAvailable(cabana)
 endif()
 
 if(ESPRESSO_BUILD_WITH_FFTW)

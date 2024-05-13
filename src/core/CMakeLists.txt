@@ -96,7 +96,7 @@ if(ESPRESSO_BUILD_WITH_WALBERLA)
             $<$<BOOL:${ESPRESSO_BUILD_WITH_CUDA}>:espresso::walberla_cuda>)
 endif()
 
-if(ESPRESSO_BUILD_WITH_KOKKOS)
+if(ESPRESSO_BUILD_WITH_CABANA)
   target_link_libraries(
     espresso_core PRIVATE Cabana::Core
   )
