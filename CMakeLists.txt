@@ -264,9 +264,8 @@ endif()
 #
 
 if(ESPRESSO_BUILD_WITH_CABANA)
-  set(Kokkos_DIR "/tikhome/phohenberger/packages/kokkos/build")
-  # This only a workaround for when you cant install kokkos
-  
+  # TODO Kokkos_DIR needs to be set here
+
   find_package(Kokkos REQUIRED)
 
   include(FetchContent)

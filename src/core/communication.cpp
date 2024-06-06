@@ -30,6 +30,10 @@
 #include <walberla_bridge/walberla_init.hpp>
 #endif
 
+#ifdef CABANA
+#include <Cabana_Core.hpp>
+#endif
+
 #include <utils/Vector.hpp>
 #include <utils/mpi/cart_comm.hpp>
 
@@ -84,9 +88,19 @@ void init(std::shared_ptr<boost::mpi::environment> mpi_env) {
 #ifdef CUDA
   cuda_on_program_start();
 #endif
-}
 
-void deinit() { Communication::m_callbacks.reset(); }
+#ifdef CABANA
+  Kokkos::initialize();
+#endif
+  }
+
+void deinit() {
+  Communication::m_callbacks.reset(); 
+  
+#ifdef CABANA
+  Kokkos::finalize();
+#endif
+  }
 } // namespace Communication
 
 Communicator::Communicator()
