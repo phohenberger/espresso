@@ -29,6 +29,7 @@ import secrets
 import time
 import urllib.parse
 import typing as t
+import webbrowser
 
 
 # Standard colors
@@ -382,7 +383,7 @@ class VectorField:
         vector_field = np.stack([origins, vectors], axis=1)
 
         return vector_field.tolist()
-
+    
 
 class Visualizer():
     """
@@ -470,9 +471,7 @@ class Visualizer():
         if jupyter:
             self._show_jupyter()
         else:
-            # Problems with server being terminated at the end of the script
-            raise NotImplementedError("Only Jupyter is supported for now")
-            # webbrowser.open_new_tab(self.address)
+            webbrowser.open_new_tab(self.address)
 
     def _start_server(self):
         """
@@ -532,7 +531,7 @@ class Visualizer():
         )
 
         # Catch when the server is initializing an empty frame
-        if self.frame_count == 0 and len(self.zndraw) > 0:
+        if not self.frame_count == 0 or not len(self.zndraw) > 0:
             self.zndraw.__setitem__(0, data)
         else:
             self.zndraw.append(data)
