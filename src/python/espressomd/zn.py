@@ -383,7 +383,6 @@ class VectorField:
         vector_field = np.stack([origins, vectors], axis=1)
 
         return vector_field.tolist()
-    
 
 class Visualizer():
     """
@@ -418,10 +417,13 @@ class Visualizer():
 
     """
 
+    SERVER_PORT = None
+    SOCKET_PORT = None
+
     def __init__(self,
                  system: espressomd.system.System = None,
                  port: int = 1234,
-                 token: str = secrets.token_hex(4),
+                 token: str = None,
                  folded: bool = True,
                  colors: dict = None,
                  radii: dict = None,
@@ -441,13 +443,18 @@ class Visualizer():
 
         self.url = "http://127.0.0.1"
         self.frame_count = 0
-        self.port = port
-        self.token = token
+        if token is None:
+            self.token = secrets.token_hex(4)
+        else:
+            self.token = token
 
         # A server is started in a subprocess, and we have to wait for it
-        print("Starting ZnDraw server, this may take a few seconds")
-        self._start_server()
-        time.sleep(10)
+        if self.SERVER_PORT is None:
+            print("Starting ZnDraw server, this may take a few seconds")
+            self.port = port
+            self._start_server()
+            time.sleep(10)            
+
         self._start_zndraw()
         time.sleep(1)
 
@@ -478,11 +485,15 @@ class Visualizer():
         Start the ZnDraw server through a subprocess
         """
         self.socket_port = zndraw.utils.get_port(default=6374)
+        
+        Visualizer.SERVER_PORT = self.port
+        Visualizer.SOCKET_PORT = self.socket_port
 
         self.server = subprocess.Popen(["zndraw", "--no-browser", f"--port={self.port}", f"--storage-port={self.socket_port}"],
                                        stdout=subprocess.DEVNULL,
                                        stderr=subprocess.DEVNULL
                                        )
+        
 
     def _start_zndraw(self):
         """
@@ -499,12 +510,12 @@ class Visualizer():
         while True:
             try:
                 self.r = znsocket.Client(
-                    address=f"{self.url}:{self.socket_port}")
+                    address=f"{self.url}:{self.SOCKET_PORT}")
                 break
             except BaseException:
                 time.sleep(0.5)
 
-        url = f"{self.url}:{self.port}"
+        url = f"{self.url}:{self.SERVER_PORT}"
         self.zndraw = zndraw.zndraw.ZnDrawLocal(
             r=self.r, url=url, token=self.token, timeout=config)
         parsed_url = urllib.parse.urlparse(
@@ -531,10 +542,11 @@ class Visualizer():
         )
 
         # Catch when the server is initializing an empty frame
-        if not self.frame_count == 0 or not len(self.zndraw) > 0:
-            self.zndraw.__setitem__(0, data)
-        else:
+        # len(self.zndraw) is a expensive socket call, so we avoid it if possible
+        if self.frame_count != 0 or len(self.zndraw) == 0:
             self.zndraw.append(data)
+        else:
+            self.zndraw.__setitem__(0, data)
 
         if self.params["vector_field"] is not None and self.frame_count == 0:
             self.zndraw.socket.sleep(1)
