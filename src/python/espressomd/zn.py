@@ -591,7 +591,10 @@ class Visualizer():
                 dist = shape.dist
                 normal = np.array(shape.normal)
 
-                rotation_angles = zndraw.utils.direction_to_euler(normal)
+                # This fixes the visualization, i don't know why
+                rot_normal = np.array([-1 * normal[2], normal[1], -1 * normal[0]])
+
+                rotation_angles = zndraw.utils.direction_to_euler(rot_normal)
 
                 position = (dist * normal).tolist()
                 # Not optimal, but ensures its always larger than the box.
