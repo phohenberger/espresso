@@ -30,7 +30,7 @@ import time
 import urllib.parse
 import typing as t
 import webbrowser
-
+import scipy.spatial.transform
 
 # Standard colors
 color_dict = {"black": "#303030",
@@ -591,22 +591,45 @@ class Visualizer():
                 dist = shape.dist
                 normal = np.array(shape.normal)
 
-                # This fixes the visualization, i don't know why
-                rot_normal = np.array([-1 * normal[2], normal[1], -1 * normal[0]])
+                position = dist * normal    
+                helper = WallIntersection(plane_normal=normal, plane_point=position, box_l=self.system.box_l)
+                corners = helper.get_intersections()
 
-                rotation_angles = zndraw.utils.direction_to_euler(rot_normal)
+                print("corners", corners)
 
-                position = (dist * normal).tolist()
-                # Not optimal, but ensures its always larger than the box.
-                wall_width = wall_height = 2 * max(self.system.box_l)
+                # Subtract position from corners
+                corners -= position
 
-                objects.append(zndraw.draw.Plane(
-                    position=position,
-                    rotation=rotation_angles,
-                    width=wall_width,
-                    height=wall_height,
-                    material=mat))
+                unit_z = np.array([0, 0, 1])
 
+                # Align normal with unit_z
+                r, _ = scipy.spatial.transform.Rotation.align_vectors([normal], [unit_z])
+                for i, corner in enumerate(corners):
+                    corners[i] = r.apply(corner)
+
+                print("corners 2: ", corners)
+
+                # Flatten the corners to x, y dimension
+                flattened_corners = np.array([[corner[0], corner[1]] for corner in corners])
+
+                mean_pos = np.mean(flattened_corners, axis=0)
+                flattened_corners2 = flattened_corners - mean_pos
+                angles = np.arctan2(flattened_corners2[:, 1], flattened_corners2[:, 0])
+
+                # Sort the corners according to their polar angle
+                sorted_indices = np.argsort(angles)
+                sorted_corners = flattened_corners[sorted_indices]
+
+                # Re-align unit_z back to normal
+                r, _ = scipy.spatial.transform.Rotation.align_vectors([unit_z], [normal])
+                euler_angles = r.as_euler("xyz")
+
+                # Adjust the rotation angle
+                euler_angles = [euler_angles[0], euler_angles[1], 0]
+                print("euler_angles: ", euler_angles) 
+                # Create the Custom2DShape object
+                objects.append(zndraw.draw.Custom2DShape(position=position, rotation=euler_angles, points=sorted_corners, material=mat))
+            
             elif shape_type == "Sphere":
                 center = shape.center
                 radius = shape.radius
@@ -634,5 +657,59 @@ class Visualizer():
             else:
                 raise NotImplementedError(
                     f"Shape of type {shape_type} isn't available in ZnDraw")
+            
+            self.zndraw.geometries = objects
 
-        self.zndraw.geometries = objects
+class WallIntersection:
+    def __init__(self,plane_point,plane_normal, box_l):
+        self.plane_point = plane_point
+        self.plane_normal = plane_normal / np.linalg.norm(plane_normal)
+        self.box_l = box_l
+
+        # Create 8 vertices of the bounding box
+        self.vertices = np.array([
+            [0, 0, 0],
+            [0, 0, box_l[2]],
+            [0, box_l[1], 0],
+            [0, box_l[1], box_l[2]],
+            [box_l[0], 0, 0],
+            [box_l[0], 0, box_l[2]],
+            [box_l[0], box_l[1], 0],
+            [box_l[0], box_l[1], box_l[2]]
+        ])
+
+        self.edges = [
+            (self.vertices[0], self.vertices[1]),
+            (self.vertices[0], self.vertices[2]),
+            (self.vertices[0], self.vertices[4]),
+            (self.vertices[1], self.vertices[3]),
+            (self.vertices[1], self.vertices[5]),
+            (self.vertices[2], self.vertices[3]),
+            (self.vertices[2], self.vertices[6]),
+            (self.vertices[3], self.vertices[7]),
+            (self.vertices[4], self.vertices[5]),
+            (self.vertices[4], self.vertices[6]),
+            (self.vertices[5], self.vertices[7]),
+            (self.vertices[6], self.vertices[7])
+        ]
+
+    def plane_intersection_with_line(self, line_point1, line_point2):
+        # Calculate the intersection point of a line and a plane
+        line_dir = line_point2 - line_point1
+        denom = np.dot(self.plane_normal, line_dir)
+
+        if np.abs(denom) > 1e-6:  # Avoid division by zero
+            t = np.dot(self.plane_normal, (self.plane_point - line_point1)) / denom
+            if 0 <= t <= 1:
+                return line_point1 + t * line_dir
+        return None
+
+    def get_intersections(self):
+        intersections = []
+
+        for edge in self.edges:
+            intersection = self.plane_intersection_with_line(edge[0], edge[1])
+            if intersection is not None:
+                intersections.append(intersection)
+
+        return np.array(intersections) 
