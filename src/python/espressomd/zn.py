@@ -595,40 +595,27 @@ class Visualizer():
                 helper = WallIntersection(plane_normal=normal, plane_point=position, box_l=self.system.box_l)
                 corners = helper.get_intersections()
 
-                print("corners", corners)
+                base_position = np.copy(corners[0])
+                corners -= base_position
 
-                # Subtract position from corners
-                corners -= position
-
+                # Rotate plane to align with z-axis, Custom2DShape only works in the xy-plane
                 unit_z = np.array([0, 0, 1])
+                r, _ = scipy.spatial.transform.Rotation.align_vectors(unit_z, normal)
+                rotated_corners = r.apply(corners)
 
-                # Align normal with unit_z
-                r, _ = scipy.spatial.transform.Rotation.align_vectors([normal], [unit_z])
-                for i, corner in enumerate(corners):
-                    corners[i] = r.apply(corner)
-
-                print("corners 2: ", corners)
-
-                # Flatten the corners to x, y dimension
-                flattened_corners = np.array([[corner[0], corner[1]] for corner in corners])
-
-                mean_pos = np.mean(flattened_corners, axis=0)
-                flattened_corners2 = flattened_corners - mean_pos
-                angles = np.arctan2(flattened_corners2[:, 1], flattened_corners2[:, 0])
-
-                # Sort the corners according to their polar angle
+                # Sort the corners in a clockwise order, except the first corner
+                angles = np.arctan2(rotated_corners[1:, 1], rotated_corners[1:, 0])
                 sorted_indices = np.argsort(angles)
-                sorted_corners = flattened_corners[sorted_indices]
-
-                # Re-align unit_z back to normal
-                r, _ = scipy.spatial.transform.Rotation.align_vectors([unit_z], [normal])
+                sorted_corners = rotated_corners[1:][sorted_indices]
+                sorted_corners = np.vstack([rotated_corners[0], sorted_corners])[:, :2]
+                
+                r, _ = scipy.spatial.transform.Rotation.align_vectors(normal, unit_z)
                 euler_angles = r.as_euler("xyz")
 
-                # Adjust the rotation angle
-                euler_angles = [euler_angles[0], euler_angles[1], 0]
-                print("euler_angles: ", euler_angles) 
-                # Create the Custom2DShape object
-                objects.append(zndraw.draw.Custom2DShape(position=position, rotation=euler_angles, points=sorted_corners, material=mat))
+                # Invert the z-axis, i dont know why this is needed, maybe different coordinate systems
+                euler_angles = [euler_angles[0], euler_angles[1], -euler_angles[2]]
+            
+                objects.append(zndraw.draw.Custom2DShape(position=base_position, rotation=euler_angles, points=sorted_corners, material=mat))
             
             elif shape_type == "Sphere":
                 center = shape.center
@@ -661,6 +648,9 @@ class Visualizer():
             self.zndraw.geometries = objects
 
 class WallIntersection:
+    """
+    Simple helper to calculate all Box edges that intersect with a plane.
+    """
     def __init__(self,plane_point,plane_normal, box_l):
         self.plane_point = plane_point
         self.plane_normal = plane_normal / np.linalg.norm(plane_normal)
