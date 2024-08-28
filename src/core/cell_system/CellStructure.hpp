@@ -51,6 +51,19 @@
 #include <utility>
 #include <vector>
 
+/*
+#ifdef CABANA
+#include <Cabana_Core.hpp>
+#include <Kokkos_Core.hpp> // Necessary?
+#endif
+
+#ifdef CABANA
+using data_types = Cabana::MemberTypes<double[3], int, int>;
+using memory_space = Kokkos::SharedSpace;
+using execution_space = Kokkos::DefaultExecutionSpace;
+#endif
+*/
+
 namespace Cells {
 enum Resort : unsigned {
   RESORT_NONE = 0u,
@@ -676,6 +689,25 @@ public:
       link_cell(pair_kernel);
     }
   }
+  /*
+  void cabana_verlet_loop(Cabana::AoSoA<data_types, memory_space, vector_length> &aosoa_particles) {
+    auto slice_position = Cabana::slice<0>(aosoa_particles);
+    auto slice_id = Cabana::slice<1>(aosoa_particles);
+    auto slice_type = Cabana::slice<2>(aosoa_particles);
+
+    double neighborhood_radius = 0.25;
+    double cell_ratio = 1.0;
+    using ListAlgorithm = Cabana::FullNeighborTag;
+    using ListType = Cabana::VerletList<MemorySpace, ListAlgorithm, Cabana::VerletLayout2D>;
+
+    double grid_min[3] = {0.0, 0.0, 0.0};
+    double grid_max[3] = {20.0, 20.0, 20.0};
+
+    std::cout << "neighborhood_radius: " << neighborhood_radius << std::endl;
+    ListType verlet_list(slice_positions, 0, slice_positions.size(), neighborhood_radius,
+                          cell_ratio, grid_min, grid_max);
+  }
+  */
 
   /**
    * @brief Check that particle index is commensurate with particles.

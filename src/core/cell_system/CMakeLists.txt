@@ -16,10 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+if(ESPRESSO_BUILD_WITH_CABANA)
+  target_link_libraries(
+    espresso_core PRIVATE Cabana::Core
+  )
+  #target_link_libraries(espresso_core PRIVATE Kokkos::kokkos)
+endif()
+ # not sure if correct
+ 
 target_sources(
   espresso_core
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AtomDecomposition.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/CellStructure.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/HybridDecomposition.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/RegularDecomposition.cpp)
+

@@ -64,17 +64,13 @@
 
 #ifdef CABANA
 #include <Cabana_Core.hpp>
+#include "short_range_cabana.hpp"
 #endif
 
 #include <cassert>
 #include <cmath>
 #include <memory>
 #include <variant>
-
-using data_types = Cabana::MemberTypes<double[3], int>;
-
-using memory_space = Kokkos::SharedSpace;
-using execution_space = Kokkos::DefaultExecutionSpace;
 
 /** External particle forces */
 static ParticleForce external_force(Particle const &p) {
@@ -183,36 +179,7 @@ void System::System::calculate_forces() {
     
   bool short_range_with_soa = true;
   if (short_range_with_soa) {
-
-    
-
-    const int local_particles = particles.size();
-
-    const int vector_length = 128;
-
-    Cabana::AoSoA<data_types, memory_space, vector_length> aosoa_particles( "test", local_particles );
-
-    auto slice_pos = Cabana::slice<0>(aosoa_particles);
-    auto slice_id = Cabana::slice<1>(aosoa_particles);
-
-    for (auto const& particle : cell_structure->local_particles()) {
-      auto const id = particle.id();
-      for ( int i = 0; i<2; i++) {
-        slice_pos( id, i) = particle.pos()[i];
-      }
-      slice_id(id) = particle.id();
-    }  
-
-    auto cabana_kernel =
-      KOKKOS_LAMBDA( const int id1, const int id2) {
-        double sum = 0;
-        for ( int i = 0; i<2; i++) {
-          sum += slice_pos(id1, i) - slice_pos(id2, i);
-        }
-        std::cout << " dist " << std::sqrt(std::abs(sum)) << " id1 " << id1 << " id2 " << id2  <<"\n";
-      };
-    Cabana::SimdPolicy<vector_length, execution_space> simd_policy( 0, 5);
-    Cabana::simd_parallel_for( simd_policy, cabana_kernel, "cabana");
+    short_range_cabana(particles, ghost_particles, *cell_structure, *box_geo, *nonbonded_ias, maximal_cutoff());
   }
   
   short_range_loop(

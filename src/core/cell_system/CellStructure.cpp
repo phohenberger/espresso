@@ -51,6 +51,11 @@
 #include <utility>
 #include <vector>
 
+#ifdef CABANA
+#include <Cabana_Core.hpp>
+#include <Kokkos_Core.hpp> // Necessary?
+#endif
+
 CellStructure::CellStructure(BoxGeometry const &box)
     : m_decomposition{std::make_unique<AtomDecomposition>(box)} {}
 

@@ -81,6 +81,8 @@ inline ParticleForce calc_central_radial_force(IA_parameters const &ia_params,
                                                Utils::Vector3d const &d,
                                                double const dist) {
 
+  std::cout << "called with: " << ia_params.lj.eps << " : " << d << " : " << dist << std::endl;
+
   ParticleForce pf{};
   auto force_factor = 0.;
 /* Lennard-Jones */
