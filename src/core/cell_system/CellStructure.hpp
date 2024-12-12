@@ -603,6 +603,40 @@ private:
     }
   }
 
+public:
+  template <class Kernel>
+  void cabana_link_cell(Kernel kernel) {
+    auto const local_cells_span = decomposition().local_cells();
+    auto const first = boost::make_indirect_iterator(local_cells_span.begin());
+    auto const last = boost::make_indirect_iterator(local_cells_span.end());
+
+    Algorithm::link_cell(first, last, [&kernel](Particle &p1, Particle &p2) {
+      kernel(p1, p2);
+    });
+  }
+
+  template <class Kernel, class VerletCriterion>
+  void cabana_verlet_list_loop(Kernel kernel,
+                               const VerletCriterion &verlet_criterion) {
+    if (m_rebuild_verlet_list) {
+      m_verlet_list.clear();
+      
+      link_cell([&](Particle &p1, Particle &p2, Distance const &d) {
+        if (verlet_criterion(p1, p2, d)) {
+          m_verlet_list.emplace_back(&p1, &p2);
+        }
+      });
+      std::cout << "Rebuild Verlet List" << std::endl;
+      m_rebuild_verlet_list = false;
+    } 
+
+    for (auto &pair : m_verlet_list) {
+      kernel(*pair.first, *pair.second);
+    } 
+  }
+
+
+private:
   /** Non-bonded pair loop with verlet lists.
    *
    * @param pair_kernel Kernel to apply

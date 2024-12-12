@@ -61,6 +61,7 @@
 
 #ifdef CABANA
 #include <Cabana_Core.hpp>
+#include "short_range_cabana.hpp"
 #endif
 
 #include <cassert>
@@ -179,6 +180,42 @@ void System::System::calculate_forces() {
   auto const collision_detection_cutoff = INACTIVE_CUTOFF;
 #endif
 
+  if (true) {
+    cabana_short_range(
+      [coulomb_kernel_ptr = get_ptr(coulomb_kernel), &bonded_ias = *bonded_ias,
+       &bond_breakage = *bond_breakage, &box_geo = *box_geo](
+          Particle &p1, int bond_id, std::span<Particle *> partners) {
+        return add_bonded_force(p1, bond_id, partners, bonded_ias,
+                                bond_breakage, box_geo, coulomb_kernel_ptr);
+      },
+      [coulomb_kernel_ptr = get_ptr(coulomb_kernel),
+       dipoles_kernel_ptr = get_ptr(dipoles_kernel),
+       elc_kernel_ptr = get_ptr(elc_kernel), &nonbonded_ias = *nonbonded_ias,
+       &thermostat = *thermostat, &bonded_ias = *bonded_ias,
+#ifdef COLLISION_DETECTION
+       &collision_detection = *collision_detection,
+#endif
+       &box_geo = *box_geo](Particle &p1, Particle &p2, Distance const &d) {
+        auto const &ia_params =
+            nonbonded_ias.get_ia_param(p1.type(), p2.type());
+        add_non_bonded_pair_force(p1, p2, d.vec21, sqrt(d.dist2), d.dist2,
+                                  ia_params, thermostat, box_geo, bonded_ias,
+                                  coulomb_kernel_ptr, dipoles_kernel_ptr,
+                                  elc_kernel_ptr);
+#ifdef COLLISION_DETECTION
+        if (not collision_detection.is_off()) {
+          collision_detection.detect_collision(p1, p2, d.dist2);
+        }
+#endif
+      },
+      *cell_structure, maximal_cutoff(), bonded_ias->maximal_cutoff(),
+      particles, ghost_particles,
+      VerletCriterion<>{*this, cell_structure->get_verlet_skin(),
+                        get_interaction_range(), coulomb_cutoff, dipole_cutoff,
+                        collision_detection_cutoff});
+
+  } else {
+
   short_range_loop(
       [coulomb_kernel_ptr = get_ptr(coulomb_kernel), &bonded_ias = *bonded_ias,
        &bond_breakage = *bond_breakage, &box_geo = *box_geo](
@@ -210,6 +247,7 @@ void System::System::calculate_forces() {
       VerletCriterion<>{*this, cell_structure->get_verlet_skin(),
                         get_interaction_range(), coulomb_cutoff, dipole_cutoff,
                         collision_detection_cutoff});
+  };
 
   constraints->add_forces(particles, get_sim_time());
   oif_global->calculate_forces();
