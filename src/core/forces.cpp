@@ -61,7 +61,7 @@
 
 #ifdef CABANA
 #include <Cabana_Core.hpp>
-#include "short_range_cabana.hpp"
+#include "short_range_cabana.cpp"
 #endif
 
 #include <cassert>
@@ -209,7 +209,7 @@ void System::System::calculate_forces() {
 #endif
       },
       *cell_structure, maximal_cutoff(), bonded_ias->maximal_cutoff(),
-      particles, ghost_particles,
+      *box_geo, *nonbonded_ias, particles, ghost_particles,
       VerletCriterion<>{*this, cell_structure->get_verlet_skin(),
                         get_interaction_range(), coulomb_cutoff, dipole_cutoff,
                         collision_detection_cutoff});
