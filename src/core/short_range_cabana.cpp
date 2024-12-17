@@ -36,7 +36,7 @@
 
 
 // ===================================================
-
+// test hash function for custom pair
 struct pair_hash {
     template <class T1, class T2>
     std::size_t operator()(const std::pair<T1, T2>& p) const {
@@ -48,9 +48,9 @@ struct pair_hash {
 
 // ===================================================
 
-template <class BondKernel, class PairKernel,
+template <class BondKernel,
           class VerletCriterion = detail::True>
-void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
+void cabana_short_range(BondKernel bond_kernel,
                       CellStructure &cell_structure, double pair_cutoff,
                       double bond_cutoff, BoxGeometry &box_geo,
                       InteractionsNonBonded &nonbonded_ias,
@@ -80,13 +80,11 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
     using ListAlgorithm = Cabana::HalfNeighborTag;
     using ListType = Cabana::CustomVerletList<memory_space, ListAlgorithm, Cabana::VerletLayout2D>;
 
-    const int vector_length = 8;
+    const int vector_length = 4;
 
     // ===================================================
     // Count unique particles and create Index map
     // ===================================================
-
-    auto t1 = std::chrono::high_resolution_clock::now();
 
     std::unordered_map<int, int> id_to_index;
     int index = 0;
@@ -103,13 +101,13 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
       }
     }
 
-    int number_of_unique_particles = index;
-
-    auto t2 = std::chrono::high_resolution_clock::now();
+    const int number_of_unique_particles = index;
 
     // ===================================================
     // Create and fill particle storage
     // ===================================================
+
+    // Could try only filling the storage with the particles that are in the verlet list
 
     Cabana::AoSoA<data_types, memory_space, vector_length> particle_storage("particles", number_of_unique_particles);
     auto slice_position = Cabana::slice<0>(particle_storage);
@@ -146,10 +144,8 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
       }
     }
 
-    auto t3 = std::chrono::high_resolution_clock::now();
-
     // ===================================================
-    // Determine Verlet Pairs
+    // Count Verlet Pairs and Fill list
     // ===================================================
 
     // TODO: this is not optimal
@@ -178,6 +174,10 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
 
     // TODO: maybe save this until next verlet list rebuild
     // but could cause problems with particle indices changing
+
+    // Potential speed up:
+    // Instead of only saving counts up ahead, find a fast way to save all neighbors and then parallel iterate over them.
+
     ListType verlet_list(slice_position, 0, slice_position.size(), *max_neighbors); 
 
     auto kernel = [&](Particle &p1, Particle &p2) {
@@ -185,8 +185,6 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
     };
     
     cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
-
-    auto t4 = std::chrono::high_resolution_clock::now();
 
     // fill customverletlist with pairs
     auto first_neighbor_kernel = KOKKOS_LAMBDA(const int i, const int j) {
@@ -211,10 +209,13 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
             Kokkos::atomic_add(&slice_force(j, 0), -kokkos_force.f[0]);
             Kokkos::atomic_add(&slice_force(j, 1), -kokkos_force.f[1]);
             Kokkos::atomic_add(&slice_force(j, 2), -kokkos_force.f[2]);
-        }
+        }  
     };
 
-    // loop over pairs with customverletlist
+    // ===================================================
+    // Execute Kernel
+    // ===================================================
+    
     Kokkos::RangePolicy<execution_space> policy(0, particle_storage.size());
 
     Cabana::neighbor_parallel_for(policy, first_neighbor_kernel, verlet_list,
@@ -223,9 +224,10 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
     
     Kokkos::fence(); 
 
-    auto t6 = std::chrono::high_resolution_clock::now();
+    // ===================================================
+    // Add forces to particles
+    // ===================================================
 
-    // copy forces back to particles
     for (auto & p : particles) {
         auto const id = id_to_index[p.id()];
         Utils::Vector3d f_vec{slice_force(id,0), slice_force(id, 1), slice_force(id, 2)};
@@ -234,14 +236,5 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
         p.force_and_torque() += f;
        
     }
-
-    auto t7 = std::chrono::high_resolution_clock::now();
-
-    //std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() << " ns" << std::endl;
-    //std::cout << "Time to fill particle storage: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count() << " ns" << std::endl;
-    //std::cout << "Time to get verlet pairs: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count() << " ns" << std::endl;
-    //std::cout << "Time to run kernel: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t6 - t4).count() << " ns" << std::endl;
-    //std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t7 - t6).count() << " ns" << std::endl;
-    //std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t7 - t1).count() << " ns" << std::endl;
   }
 }
