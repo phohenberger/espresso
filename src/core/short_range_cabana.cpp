@@ -69,6 +69,8 @@ void cabana_short_range(BondKernel bond_kernel,
   // Cabana short range loop
   if (pair_cutoff > 0.) {
 
+    auto t1 = std::chrono::high_resolution_clock::now();
+
     // ===================================================
     // Setup Cabana Variables
     // ===================================================
@@ -85,6 +87,9 @@ void cabana_short_range(BondKernel bond_kernel,
     // ===================================================
     // Count unique particles and create Index map
     // ===================================================
+
+    // TODO:
+    // Move this to cell structure and only recalculate when verlet recalculates
 
     std::unordered_map<int, int> id_to_index;
     int index = 0;
@@ -103,11 +108,16 @@ void cabana_short_range(BondKernel bond_kernel,
 
     const int number_of_unique_particles = index;
 
+    auto t2 = std::chrono::high_resolution_clock::now();
+
     // ===================================================
     // Create and fill particle storage
     // ===================================================
 
-    // Could try only filling the storage with the particles that are in the verlet list
+    // Maybe move to cell structure and only update positions?
+    // Only recalculate id/type etc when verlet recalculates
+    // Probably not worth it, writing is actually very fast.
+
 
     Cabana::AoSoA<data_types, memory_space, vector_length> particle_storage("particles", number_of_unique_particles);
     auto slice_position = Cabana::slice<0>(particle_storage);
@@ -118,70 +128,51 @@ void cabana_short_range(BondKernel bond_kernel,
 
     for (auto const& p : particles) {
       auto const pos = p.pos();
-      slice_position(id_to_index[p.id()], 0) = pos[0];
-      slice_position(id_to_index[p.id()], 1) = pos[1];
-      slice_position(id_to_index[p.id()], 2) = pos[2];
-      slice_id(id_to_index[p.id()]) = p.id();
-      slice_type(id_to_index[p.id()]) = p.type();
-      slice_ghost(id_to_index[p.id()]) = 0;
-      slice_force(id_to_index[p.id()], 0) = 0.0;
-      slice_force(id_to_index[p.id()], 1) = 0.0;
-      slice_force(id_to_index[p.id()], 2) = 0.0;
+      auto const id = id_to_index.at(p.id());
+      slice_position(id, 0) = pos[0];
+      slice_position(id, 1) = pos[1];
+      slice_position(id, 2) = pos[2];
+      slice_id(id) = p.id();
+      slice_type(id) = p.type();
+      slice_ghost(id) = 0;
+      slice_force(id, 0) = 0.0;
+      slice_force(id, 1) = 0.0;
+      slice_force(id, 2) = 0.0;
     }
 
     for (auto const& p : ghost_particles) {
       if (id_to_index.find(p.id()) == id_to_index.end()) {
         auto const pos = p.pos();
-        slice_position(id_to_index[p.id()], 0) = pos[0];
-        slice_position(id_to_index[p.id()], 1) = pos[1];
-        slice_position(id_to_index[p.id()], 2) = pos[2];
-        slice_id(id_to_index[p.id()]) = p.id();
-        slice_type(id_to_index[p.id()]) = p.type();
-        slice_ghost(id_to_index[p.id()]) = 1;
-        slice_force(id_to_index[p.id()], 0) = 0.0;
-        slice_force(id_to_index[p.id()], 1) = 0.0;
-        slice_force(id_to_index[p.id()], 2) = 0.0;
+        auto const id = id_to_index.at(p.id());
+        slice_position(id, 0) = pos[0];
+        slice_position(id, 1) = pos[1];
+        slice_position(id, 2) = pos[2];
+        slice_id(id) = p.id();
+        slice_type(id) = p.type();
+        slice_ghost(id) = 1;
+        slice_force(id, 0) = 0.0;
+        slice_force(id, 1) = 0.0;
+        slice_force(id, 2) = 0.0;
       }
     }
 
+    auto t3 = std::chrono::high_resolution_clock::now();
+
     // ===================================================
-    // Count Verlet Pairs and Fill list
+    // Get Verlet Pairs and Fill list
     // ===================================================
 
-    // TODO: this is not optimal
-    // Either use dynamic memory allocation in custom verlet list
-    // or
-    // use a variant of this function to determine the maximum number of neighbors
-    // and then allocate
-    // Using a set to count particle pairs was slow
-
-
-    // Neighbor counts, which particles has how many neighbors
-    int neighbor_counts[number_of_unique_particles] = {0};
-    //std::set<std::pair<int, int>> neighbor_map;
-
-    // Counting kernel
-    auto kernel_count = [&](Particle &p1, Particle &p2) {
-      neighbor_counts[id_to_index[p1.id()]] = neighbor_counts[id_to_index[p1.id()]] + 1;
-    };
-
-    // Loop over all pairs to count neighbors
-    cell_structure.cabana_verlet_list_loop(kernel_count, verlet_criterion);
-
-    // Find max amount of neighbors from count for allocation in CustomVerletList
-    auto max_neighbors = std::max_element(neighbor_counts, neighbor_counts + number_of_unique_particles);
-
-
+    auto t4 = std::chrono::high_resolution_clock::now();
     // TODO: maybe save this until next verlet list rebuild
     // but could cause problems with particle indices changing
 
     // Potential speed up:
     // Instead of only saving counts up ahead, find a fast way to save all neighbors and then parallel iterate over them.
 
-    ListType verlet_list(slice_position, 0, slice_position.size(), *max_neighbors); 
+    ListType verlet_list(slice_position, 0, slice_position.size(), 16); 
 
     auto kernel = [&](Particle &p1, Particle &p2) {
-      verlet_list.addNeighbor(id_to_index[p1.id()], id_to_index[p2.id()]);
+      verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
     };
     
     cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
@@ -199,18 +190,16 @@ void cabana_short_range(BondKernel bond_kernel,
 
         const ParticleForce kokkos_force = calc_central_radial_force(ia_param, dist_vec, dist);
 
-        if (slice_ghost(i) == 0) {
-            Kokkos::atomic_add(&slice_force(i, 0), kokkos_force.f[0]);
-            Kokkos::atomic_add(&slice_force(i, 1), kokkos_force.f[1]);
-            Kokkos::atomic_add(&slice_force(i, 2), kokkos_force.f[2]);
-        }
-
-        if (slice_ghost(j) == 0) {
-            Kokkos::atomic_add(&slice_force(j, 0), -kokkos_force.f[0]);
-            Kokkos::atomic_add(&slice_force(j, 1), -kokkos_force.f[1]);
-            Kokkos::atomic_add(&slice_force(j, 2), -kokkos_force.f[2]);
-        }  
+        Kokkos::atomic_add(&slice_force(i, 0), kokkos_force.f[0]);
+        Kokkos::atomic_add(&slice_force(i, 1), kokkos_force.f[1]);
+        Kokkos::atomic_add(&slice_force(i, 2), kokkos_force.f[2]);
+        
+        Kokkos::atomic_add(&slice_force(j, 0), -kokkos_force.f[0]);
+        Kokkos::atomic_add(&slice_force(j, 1), -kokkos_force.f[1]);
+        Kokkos::atomic_add(&slice_force(j, 2), -kokkos_force.f[2]);  
     };
+
+    auto t5 = std::chrono::high_resolution_clock::now();
 
     // ===================================================
     // Execute Kernel
@@ -224,17 +213,40 @@ void cabana_short_range(BondKernel bond_kernel,
     
     Kokkos::fence(); 
 
+
+    auto t6 = std::chrono::high_resolution_clock::now();
+
     // ===================================================
     // Add forces to particles
     // ===================================================
 
     for (auto & p : particles) {
-        auto const id = id_to_index[p.id()];
+        auto const id = id_to_index.at(p.id());
         Utils::Vector3d f_vec{slice_force(id,0), slice_force(id, 1), slice_force(id, 2)};
         
         ParticleForce f(f_vec);
         p.force_and_torque() += f;
        
     }
+
+    for (auto & p : ghost_particles) {
+        // TODO: CHECK ID IN INDEX
+        auto const id = id_to_index.at(p.id());
+        Utils::Vector3d f_vec{slice_force(id,0), slice_force(id, 1), slice_force(id, 2)};
+        
+        ParticleForce f(f_vec);
+        p.force_and_torque() += f;
+    }
+
+    auto t7 = std::chrono::high_resolution_clock::now();
+
+    std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
+    std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
+    std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
+    std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
+    std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
+    std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
+    std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << " us" << std::endl;
+    std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
   }
 }
