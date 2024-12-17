@@ -619,6 +619,7 @@ public:
   void cabana_verlet_list_loop(Kernel kernel,
                                const VerletCriterion &verlet_criterion) {
     if (m_rebuild_verlet_list) {
+      std::cout << "Rebuilding verlet list" << std::endl;
       m_verlet_list.clear();
       
       link_cell([&](Particle &p1, Particle &p2, Distance const &d) {
@@ -626,10 +627,9 @@ public:
           m_verlet_list.emplace_back(&p1, &p2);
         }
       });
-      //std::cout << "Rebuild Verlet List" << std::endl;
       m_rebuild_verlet_list = false;
     } 
-
+    std::cout << "Running kernel" << std::endl;
     for (auto &pair : m_verlet_list) {
       kernel(*pair.first, *pair.second);
     } 

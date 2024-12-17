@@ -175,29 +175,18 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
     // Find max amount of neighbors from count for allocation in CustomVerletList
     auto max_neighbors = std::max_element(neighbor_counts, neighbor_counts + number_of_unique_particles);
 
+
+    // TODO: maybe save this until next verlet list rebuild
+    // but could cause problems with particle indices changing
     ListType verlet_list(slice_position, 0, slice_position.size(), *max_neighbors); 
 
     auto kernel = [&](Particle &p1, Particle &p2) {
       verlet_list.addNeighbor(id_to_index[p1.id()], id_to_index[p2.id()]);
     };
-
-
-
+    
     cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
 
     auto t4 = std::chrono::high_resolution_clock::now();
-
-    // calculate max neighbors
-    //std::cout << "Max neighbors: " << *max_neighbors << std::endl;
-
-    // build empty customverletlist
-    
-
-    //for (auto const& pair : neighbor_map) {
-    //  verlet_list.addNeighbor(pair.first, pair.second);
-    //}
-
-    auto t5 = std::chrono::high_resolution_clock::now();
 
     // fill customverletlist with pairs
     auto first_neighbor_kernel = KOKKOS_LAMBDA(const int i, const int j) {
@@ -206,7 +195,6 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
         Utils::Vector3d pj = {slice_position(j, 0), slice_position(j, 1), slice_position(j, 2)};
 
         Utils::Vector3d const dist_vec = box_geo.get_mi_vector(pi, pj);
-        //std::cout << "Dist vec: " << dist_vec[0] << " " << dist_vec[1] << " " << dist_vec[2] << std::endl;
         auto const dist = dist_vec.norm();
 
         IA_parameters const& ia_param = nonbonded_ias.get_ia_param(slice_type(i), slice_type(j));
@@ -217,15 +205,12 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
             Kokkos::atomic_add(&slice_force(i, 0), kokkos_force.f[0]);
             Kokkos::atomic_add(&slice_force(i, 1), kokkos_force.f[1]);
             Kokkos::atomic_add(&slice_force(i, 2), kokkos_force.f[2]);
-            //std::cout << "Force i: " << slice_force(i,0) << " " << slice_force(i, 1) << " " << slice_force(i, 2) << " " << std::endl;
-
         }
 
         if (slice_ghost(j) == 0) {
             Kokkos::atomic_add(&slice_force(j, 0), -kokkos_force.f[0]);
             Kokkos::atomic_add(&slice_force(j, 1), -kokkos_force.f[1]);
             Kokkos::atomic_add(&slice_force(j, 2), -kokkos_force.f[2]);
-            //std::cout << "Force j: " << slice_force(j,0) << " " << slice_force(j, 1) << " " << slice_force(j, 2) << " " << std::endl;
         }
     };
 
@@ -252,12 +237,11 @@ void cabana_short_range(BondKernel bond_kernel, PairKernel pair_kernel,
 
     auto t7 = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() << " ns" << std::endl;
-    std::cout << "Time to fill particle storage: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count() << " ns" << std::endl;
-    std::cout << "Time to get verlet pairs: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count() << " ns" << std::endl;
-    std::cout << "Time to create custom verlet list: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t5 - t4).count() << " ns" << std::endl;
-    std::cout << "Time to run kernel: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t6 - t5).count() << " ns" << std::endl;
-    std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t7 - t6).count() << " ns" << std::endl;
-    std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t7 - t1).count() << " ns" << std::endl;
+    //std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() << " ns" << std::endl;
+    //std::cout << "Time to fill particle storage: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count() << " ns" << std::endl;
+    //std::cout << "Time to get verlet pairs: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count() << " ns" << std::endl;
+    //std::cout << "Time to run kernel: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t6 - t4).count() << " ns" << std::endl;
+    //std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t7 - t6).count() << " ns" << std::endl;
+    //std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t7 - t1).count() << " ns" << std::endl;
   }
 }
