@@ -626,7 +626,7 @@ public:
           m_verlet_list.emplace_back(&p1, &p2);
         }
       });
-      std::cout << "Rebuild Verlet List" << std::endl;
+      //std::cout << "Rebuild Verlet List" << std::endl;
       m_rebuild_verlet_list = false;
     } 
 
