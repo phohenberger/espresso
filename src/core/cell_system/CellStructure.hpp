@@ -52,6 +52,15 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <any>
+
+//#ifdef CABANA
+//#include <Cabana_Core.hpp>
+//#endif
+
+
+// forward declaration to not have to import cabana
+class ListType;
 
 namespace Cells {
 enum Resort : unsigned {
@@ -603,7 +612,22 @@ private:
     }
   }
 
+private:
+    std::any storedObject;
+
 public:
+  template <typename T>
+    void saveObject(const T& obj) {
+      storedObject = obj;
+    }
+  template <typename T>
+    T getObject() const {
+      return std::any_cast<T>(storedObject);
+    }
+
+
+  bool get_rebuild_verlet_list() const { return m_rebuild_verlet_list; }
+
   template <class Kernel>
   void cabana_link_cell(Kernel kernel) {
     auto const local_cells_span = decomposition().local_cells();

@@ -51,6 +51,7 @@
 #include <utility>
 #include <vector>
 
+
 CellStructure::CellStructure(BoxGeometry const &box)
     : m_decomposition{std::make_unique<AtomDecomposition>(box)} {}
 

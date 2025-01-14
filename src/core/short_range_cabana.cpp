@@ -97,6 +97,7 @@ void cabana_short_range(BondKernel bond_kernel,
     for (auto const& p : particles) {
       id_to_index[p.id()] = index;
       index++;
+      
     }
 
     for (auto const& p : ghost_particles) {
@@ -104,6 +105,11 @@ void cabana_short_range(BondKernel bond_kernel,
         id_to_index[p.id()] = index;
         index++;
       }
+    }
+
+    // print all particles pairs in map
+    for (auto const& p : id_to_index) {
+      //std::cout << p.first << " " << p.second << std::endl;
     }
 
     const int number_of_unique_particles = index;
@@ -168,20 +174,43 @@ void cabana_short_range(BondKernel bond_kernel,
 
     // Potential speed up:
     // Instead of only saving counts up ahead, find a fast way to save all neighbors and then parallel iterate over them.
-
-    ListType verlet_list(slice_position, 0, slice_position.size(), 16); 
-
-    auto kernel = [&](Particle &p1, Particle &p2) {
-      verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
-    };
     
-    cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
+    ListType verlet_list;
 
+    if (true) {
+      verlet_list = ListType(slice_position, 0, slice_position.size(), 16); 
+
+      auto kernel = [&](Particle &p1, Particle &p2) {
+        verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
+      };
+        
+      cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
+    } else {
+
+      bool rebuild = cell_structure.get_rebuild_verlet_list();
+      std::cout << "Rebuild: " << rebuild << std::endl;
+      
+      
+      if (rebuild) {
+
+        verlet_list = ListType(slice_position, 0, slice_position.size(), 16);
+        
+        auto kernel = [&](Particle &p1, Particle &p2) {
+          verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
+        };
+
+        cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
+        cell_structure.saveObject(verlet_list);
+
+      } else {
+        verlet_list = cell_structure.getObject<ListType>();
+      }
+    }
     // fill customverletlist with pairs
     auto first_neighbor_kernel = KOKKOS_LAMBDA(const int i, const int j) {
 
-        Utils::Vector3d pi = {slice_position(i, 0), slice_position(i, 1), slice_position(i, 2)};
-        Utils::Vector3d pj = {slice_position(j, 0), slice_position(j, 1), slice_position(j, 2)};
+        Utils::Vector3d const pi = {slice_position(i, 0), slice_position(i, 1), slice_position(i, 2)};
+        Utils::Vector3d const pj = {slice_position(j, 0), slice_position(j, 1), slice_position(j, 2)};
 
         Utils::Vector3d const dist_vec = box_geo.get_mi_vector(pi, pj);
         auto const dist = dist_vec.norm();
@@ -207,9 +236,11 @@ void cabana_short_range(BondKernel bond_kernel,
     
     Kokkos::RangePolicy<execution_space> policy(0, particle_storage.size());
 
+
+    // TODO: Add option to switch "SerialOpTag" Between "TeamOpTag"
     Cabana::neighbor_parallel_for(policy, first_neighbor_kernel, verlet_list,
                                     Cabana::FirstNeighborsTag(),
-                                    Cabana::SerialOpTag(), "verlet_list");
+                                    Cabana::TeamOpTag(), "verlet_list");
     
     Kokkos::fence(); 
 

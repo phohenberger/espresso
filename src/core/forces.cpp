@@ -182,7 +182,7 @@ void System::System::calculate_forces() {
 
   // TODO: Use #ifdef CABANA here
   // but at the moments its faster for rebuilding to just change this to false
-  if (true) {
+  if (false) {
     cabana_short_range(
       [
         coulomb_kernel_ptr = get_ptr(coulomb_kernel), &bonded_ias = *bonded_ias,
