@@ -260,6 +260,8 @@ void cabana_short_range(BondKernel bond_kernel,
        
     }
 
+    // Gives wrong results
+    /*
     for (auto & p : ghost_particles) {
         // TODO: CHECK ID IN INDEX
         auto const id = id_to_index.at(p.id());
@@ -267,7 +269,7 @@ void cabana_short_range(BondKernel bond_kernel,
         
         ParticleForce f(f_vec);
         p.force_and_torque() += f;
-    }
+    }*/
 
     auto t7 = std::chrono::high_resolution_clock::now();
 
