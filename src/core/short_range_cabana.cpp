@@ -161,6 +161,9 @@ void cabana_short_range(BondKernel bond_kernel,
 
     int counts = 0;
 
+
+    // Test different saving options
+    // No-save verlet-list in cellstructure
     if (false) {
       verlet_list = ListType(slice_position, 0, slice_position.size(), 16); 
 
@@ -171,6 +174,7 @@ void cabana_short_range(BondKernel bond_kernel,
         
       cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
     } else {
+    // Save verlet-list in cellstructure
 
       bool rebuild = cell_structure.get_rebuild_verlet_list();
       
