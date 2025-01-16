@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2022 The ESPResSo project
+ * Copyright (C) 2010-2025 The ESPResSo project
  *
  * This file is part of ESPResSo.
  *
@@ -27,8 +27,9 @@
 
 #include <Cabana_Core.hpp>
 
-#endif
 
+
+#include "custom_verlet_list.hpp"
 #include <cassert>
 #include <unordered_set>
 #include <utility>
@@ -97,7 +98,6 @@ void cabana_short_range(BondKernel bond_kernel,
     for (auto const& p : particles) {
       id_to_index[p.id()] = index;
       index++;
-      
     }
 
     for (auto const& p : ghost_particles) {
@@ -105,11 +105,6 @@ void cabana_short_range(BondKernel bond_kernel,
         id_to_index[p.id()] = index;
         index++;
       }
-    }
-
-    // print all particles pairs in map
-    for (auto const& p : id_to_index) {
-      //std::cout << p.first << " " << p.second << std::endl;
     }
 
     const int number_of_unique_particles = index;
@@ -169,27 +164,23 @@ void cabana_short_range(BondKernel bond_kernel,
     // ===================================================
 
     auto t4 = std::chrono::high_resolution_clock::now();
-    // TODO: maybe save this until next verlet list rebuild
-    // but could cause problems with particle indices changing
 
-    // Potential speed up:
-    // Instead of only saving counts up ahead, find a fast way to save all neighbors and then parallel iterate over them.
-    
     ListType verlet_list;
 
-    if (true) {
+    int counts = 0;
+
+    if (false) {
       verlet_list = ListType(slice_position, 0, slice_position.size(), 16); 
 
       auto kernel = [&](Particle &p1, Particle &p2) {
         verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
+        counts++;
       };
         
       cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
     } else {
 
       bool rebuild = cell_structure.get_rebuild_verlet_list();
-      std::cout << "Rebuild: " << rebuild << std::endl;
-      
       
       if (rebuild) {
 
@@ -197,15 +188,17 @@ void cabana_short_range(BondKernel bond_kernel,
         
         auto kernel = [&](Particle &p1, Particle &p2) {
           verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
+          counts++;
         };
 
         cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
-        cell_structure.saveObject(verlet_list);
+        cell_structure.store_verlet_list(verlet_list);
 
       } else {
-        verlet_list = cell_structure.getObject<ListType>();
+        verlet_list = cell_structure.get_stored_verlet_list<ListType>();
       }
     }
+
     // fill customverletlist with pairs
     auto first_neighbor_kernel = KOKKOS_LAMBDA(const int i, const int j) {
 
@@ -273,13 +266,16 @@ void cabana_short_range(BondKernel bond_kernel,
 
     auto t7 = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
-    std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
-    std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
-    std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
-    std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
-    std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
-    std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << " us" << std::endl;
-    std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
+    //std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
+    //std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
+    //std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
+    //std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
+    //std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
+    //std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
+    //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << " " << counts << std::endl;
+    //std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
+
   }
 }
+
+#endif

@@ -54,11 +54,6 @@
 #include <vector>
 #include <any>
 
-//#ifdef CABANA
-//#include <Cabana_Core.hpp>
-//#endif
-
-
 // forward declaration to not have to import cabana
 class ListType;
 
@@ -612,19 +607,19 @@ private:
     }
   }
 
+#ifdef CABANA
 private:
-    std::any storedObject;
+    std::any stored_verlet_list;
 
 public:
   template <typename T>
-    void saveObject(const T& obj) {
-      storedObject = obj;
+    void store_verlet_list(const T& obj) {
+      stored_verlet_list = obj;
     }
   template <typename T>
-    T getObject() const {
-      return std::any_cast<T>(storedObject);
+    T get_stored_verlet_list() const {
+      return std::any_cast<T>(stored_verlet_list);
     }
-
 
   bool get_rebuild_verlet_list() const { return m_rebuild_verlet_list; }
 
@@ -656,7 +651,7 @@ public:
       kernel(*pair.first, *pair.second);
     } 
   }
-
+#endif
 
 private:
   /** Non-bonded pair loop with verlet lists.
