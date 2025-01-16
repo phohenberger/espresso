@@ -70,8 +70,6 @@ void cabana_short_range(BondKernel bond_kernel,
   // Cabana short range loop
   if (pair_cutoff > 0.) {
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-
     // ===================================================
     // Setup Cabana Variables
     // ===================================================
@@ -108,8 +106,6 @@ void cabana_short_range(BondKernel bond_kernel,
     }
 
     const int number_of_unique_particles = index;
-
-    auto t2 = std::chrono::high_resolution_clock::now();
 
     // ===================================================
     // Create and fill particle storage
@@ -157,13 +153,9 @@ void cabana_short_range(BondKernel bond_kernel,
       }
     }
 
-    auto t3 = std::chrono::high_resolution_clock::now();
-
     // ===================================================
     // Get Verlet Pairs and Fill list
     // ===================================================
-
-    auto t4 = std::chrono::high_resolution_clock::now();
 
     ListType verlet_list;
 
@@ -221,8 +213,6 @@ void cabana_short_range(BondKernel bond_kernel,
         Kokkos::atomic_add(&slice_force(j, 2), -kokkos_force.f[2]);  
     };
 
-    auto t5 = std::chrono::high_resolution_clock::now();
-
     // ===================================================
     // Execute Kernel
     // ===================================================
@@ -237,8 +227,6 @@ void cabana_short_range(BondKernel bond_kernel,
     
     Kokkos::fence(); 
 
-
-    auto t6 = std::chrono::high_resolution_clock::now();
 
     // ===================================================
     // Add forces to particles
@@ -263,17 +251,6 @@ void cabana_short_range(BondKernel bond_kernel,
         ParticleForce f(f_vec);
         p.force_and_torque() += f;
     }*/
-
-    auto t7 = std::chrono::high_resolution_clock::now();
-
-    //std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
-    //std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
-    //std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
-    //std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
-    //std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
-    //std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
-    //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << " " << counts << std::endl;
-    //std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
 
   }
 }
