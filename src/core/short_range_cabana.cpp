@@ -89,22 +89,30 @@ void cabana_short_range(BondKernel bond_kernel,
     // Count unique particles and create Index map
     // ===================================================
 
-    // TODO:
-    // Move this to cell structure and only recalculate when verlet recalculates
-
     std::unordered_map<int, int> id_to_index;
     int index = 0;
 
-    for (auto const& p : particles) {
-      id_to_index[p.id()] = index;
-      index++;
-    }
+    bool rebuild = cell_structure.get_rebuild_verlet_list();
 
-    for (auto const& p : ghost_particles) {
-      if (id_to_index.find(p.id()) == id_to_index.end()) {
+    if (true) {
+      
+      for (auto const& p : particles) {
         id_to_index[p.id()] = index;
         index++;
       }
+
+      for (auto const& p : ghost_particles) {
+        if (id_to_index.find(p.id()) == id_to_index.end()) {
+          id_to_index[p.id()] = index;
+          index++;
+        }
+      }
+      
+      //cell_structure.store_index_map(id_to_index);
+
+    } else {
+      id_to_index = cell_structure.get_stored_index_map();
+      index = id_to_index.size();
     }
 
     const int number_of_unique_particles = index;
@@ -179,9 +187,7 @@ void cabana_short_range(BondKernel bond_kernel,
         
       cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
     } else {
-
-      bool rebuild = cell_structure.get_rebuild_verlet_list();
-      
+    
       if (rebuild) {
 
         verlet_list = ListType(slice_position, 0, slice_position.size(), 16);

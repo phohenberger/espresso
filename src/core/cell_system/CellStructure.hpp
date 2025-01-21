@@ -610,6 +610,7 @@ private:
 #ifdef CABANA
 private:
     std::any stored_verlet_list;
+    std::unordered_map<int, int> stored_index_map;
 
 public:
   template <typename T>
@@ -620,6 +621,14 @@ public:
     T get_stored_verlet_list() const {
       return std::any_cast<T>(stored_verlet_list);
     }
+
+  void store_index_map(const std::unordered_map<int, int>& obj) {
+    stored_index_map = obj;
+  }
+
+  std::unordered_map<int, int> get_stored_index_map() const {
+    return stored_index_map;
+  }
 
   bool get_rebuild_verlet_list() const { return m_rebuild_verlet_list; }
 
