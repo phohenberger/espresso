@@ -322,11 +322,12 @@ def lj_generic_force(espressomd, r, epsilon, sigma, cutoff, offset=0., e1=12,
     if r >= offset + cutoff:
         f = 0.
     else:
+        has_ljgen_softcore = espressomd.has_features("LJGEN_SOFTCORE")
         h = (r - offset)**2 + delta * (1. - lam) * sigma**2
         f = (r - offset) * epsilon * lam * (
-            b1 * e1 * np.power(sigma / np.sqrt(h), e1) - b2 * e2 * np.power(sigma / np.sqrt(h), e2)) / h
-        if (not espressomd.has_features("LJGEN_SOFTCORE")) and generic:
-            f *= np.sign(r - offset)
+            b1 * e1 * np.power(sigma / np.sqrt(h), e1) -
+            b2 * e2 * np.power(sigma / np.sqrt(h), e2)) / h
+        f *= np.sign(r - offset) if generic and not has_ljgen_softcore else 1
     return f
 
 # Lennard-Jones
