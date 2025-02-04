@@ -291,30 +291,7 @@ endif()
 if(ESPRESSO_BUILD_WITH_CABANA)
   # TODO Kokkos_DIR needs to be set here
 
-  
-  set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable OpenMP backend for Kokkos" FORCE)
-  set(Kokkos_ENABLE_SERIAL ON CACHE BOOL "Enable Serial backend for Kokkos" FORCE)
-
-  include(FetchContent)
-  FetchContent_Declare(
-    Kokkos
-    GIT_REPOSITORY https://github.com/kokkos/kokkos.git
-    GIT_TAG "4.3.01"
-  )
-  
-  FetchContent_Populate(Kokkos)
-
-  # Not cool, but Cabana needs Kokkos to already be built?
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -S ${Kokkos_SOURCE_DIR} -B ${Kokkos_BINARY_DIR} 
-    -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON 
-  )
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} --build ${Kokkos_BINARY_DIR} -j${nproc}
-  )
-  
-  set(Kokkos_DIR "${Kokkos_BINARY_DIR}")
+  find_package(Kokkos REQUIRED)
 
   include(FetchContent)
   if(EXISTS "${CMAKE_BINARY_DIR}/_deps/cabana-build")
