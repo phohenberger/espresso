@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 The ESPResSo project
+ * Copyright (C) 2020-2025 The ESPResSo project
  *
  * This file is part of ESPResSo.
  *
@@ -20,28 +20,42 @@
 #pragma once
 
 #include <core/DataTypes.h>
+#include <core/cell/Cell.h>
 #include <core/math/Matrix3.h>
 #include <core/math/Vector3.h>
 
 #include <utils/Vector.hpp>
 #include <utils/interpolation/bspline_3d.hpp>
 
+#include <type_traits>
+
 namespace walberla {
 
-template <typename T, typename U = T> inline U es2walberla(T v) {
+template <typename T, typename U = T> inline U es2walberla(T const &v) {
+  static_assert(std::is_arithmetic_v<T> and std::is_arithmetic_v<U>,
+                "a partial specialization of es2walberla is missing for the "
+                "type you are trying to convert");
   return numeric_cast<U>(v);
 }
-template <> inline Vector3<float> es2walberla(Utils::Vector3d const v) {
+template <> inline Vector3<float> es2walberla(Utils::Vector3d const &v) {
   return Vector3<float>{numeric_cast<float>(v[0]), numeric_cast<float>(v[1]),
                         numeric_cast<float>(v[2])};
 }
-template <> inline Vector3<double> es2walberla(Utils::Vector3d const v) {
+template <> inline Vector3<double> es2walberla(Utils::Vector3d const &v) {
   return Vector3<double>{v[0], v[1], v[2]};
 }
 
 template <typename T> auto to_vector3d(Vector3<T> const &v) noexcept {
   return Utils::Vector3d{Utils::detail::carray_alias<double, 3u>{
       double_c(v[0]), double_c(v[1]), double_c(v[2])}};
+}
+
+inline Utils::Vector3i to_vector3i(Vector3<int> const &v) noexcept {
+  return {v[0], v[1], v[2]};
+}
+
+inline Utils::Vector3i to_vector3i(Cell const &v) noexcept {
+  return {v.x(), v.y(), v.z()};
 }
 
 template <typename T> auto to_vector3(Utils::Vector3d const &v) noexcept {
@@ -54,12 +68,6 @@ template <typename T> auto to_vector9d(Matrix3<T> const &m) noexcept {
       double_c(m[0]), double_c(m[1]), double_c(m[2]), double_c(m[3]),
       double_c(m[4]), double_c(m[5]), double_c(m[6]), double_c(m[7]),
       double_c(m[8])}};
-}
-
-template <typename T> auto walberla2es(T v) noexcept { return v; }
-
-template <typename T> auto walberla2es(Vector3<T> const &v) noexcept {
-  return to_vector3d(v);
 }
 
 template <typename Function>

@@ -50,6 +50,11 @@ parser.add_argument("--multi-gpu", action=argparse.BooleanOptionalAction,
 parser.add_argument("--output", metavar="FILEPATH", action="store",
                     type=str, required=False, default="benchmarks.csv",
                     help="Output file (default: benchmarks.csv)")
+parser.add_argument("--blocks_per_mpi_rank", action="store", nargs=3,
+                    type=int, default=[1, 1, 1], required=False,
+                    help="blocks per mpi rank")
+parser.add_argument("--weak_scaling", action="store_true", required=False,
+                    help="The measurement of weak scaling")
 
 args = parser.parse_args()
 
@@ -101,6 +106,9 @@ else:
     lb_grid = 3 * [lb_grid]
     box_l = 3 * [box_l]
 
+if args.weak_scaling:
+    box_l *= system.cell_system.node_grid
+
 print(f"box length: {box_l}")
 print(f"LB shape: {lb_grid}")
 print(f"LB agrid: {agrid:.3f}")
@@ -145,7 +153,8 @@ if args.gpu or args.multi_gpu:
 if args.multi_gpu:
     system.cuda_init_handle.call_method("set_device_id_per_rank")
 lbf = lb_class(agrid=agrid, tau=system.time_step, kinematic_viscosity=1.,
-               density=1., single_precision=args.single_precision)
+               density=1., single_precision=args.single_precision,
+               blocks_per_mpi_rank=args.blocks_per_mpi_rank)
 system.lb = lbf
 if n_part:
     system.thermostat.set_lb(LB_fluid=lbf, gamma=1., seed=42)

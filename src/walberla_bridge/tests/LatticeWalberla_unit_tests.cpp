@@ -52,8 +52,8 @@ static LatticeTestParameters params; // populated in main()
 static Vector3i mpi_shape;           // populated in main
 
 BOOST_DATA_TEST_CASE(domain_and_halo, bdata::xrange(3u), n_ghost_layers) {
-  auto const lattice =
-      LatticeWalberla(params.grid_dimensions, mpi_shape, n_ghost_layers);
+  auto const lattice = LatticeWalberla(params.grid_dimensions, mpi_shape,
+                                       mpi_shape, n_ghost_layers);
   auto const [my_left, my_right] = lattice.get_local_domain();
 
   for (auto const &n : all_nodes_incl_ghosts(lattice)) {
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(exceptions) {
     auto grid_dims = Vector3i::broadcast(1);
     grid_dims[i] = 3;
     node_grid[i] = 2;
-    BOOST_CHECK_THROW(LatticeWalberla(grid_dims, node_grid, 1u),
+    BOOST_CHECK_THROW(LatticeWalberla(grid_dims, node_grid, node_grid, 1u),
                       std::runtime_error);
   }
 }

@@ -245,5 +245,12 @@ class LBThermostatWalberlaSinglePrecisionGPU(LBThermostatCommon, ut.TestCase):
     lb_params = {"single_precision": True}
 
 
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBThermostatWalberlaDoublePrecisionBlocksCPU(
+        LBThermostatCommon, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [2, 2, 2]}
+
+
 if __name__ == '__main__':
     ut.main()

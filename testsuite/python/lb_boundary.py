@@ -125,5 +125,11 @@ class LBBoundariesWalberlaSinglePrecisionGPU(LBBoundariesBase, ut.TestCase):
     lb_params = {"single_precision": True}
 
 
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBBoundariesWalberlaDoublePrecisionCPU(LBBoundariesBase, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [2, 1, 1]}
+
+
 if __name__ == "__main__":
     ut.main()

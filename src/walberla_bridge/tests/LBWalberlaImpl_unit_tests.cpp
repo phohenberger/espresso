@@ -604,8 +604,8 @@ BOOST_DATA_TEST_CASE(vtk_exceptions,
 
 BOOST_AUTO_TEST_CASE(lb_exceptions) {
   using LB = walberla::LBWalberlaImpl<double, lbmpy::Arch::CPU>;
-  auto lb_lattice_without_ghosts =
-      std::make_shared<LatticeWalberla>(params.grid_dimensions, mpi_shape, 0u);
+  auto lb_lattice_without_ghosts = std::make_shared<LatticeWalberla>(
+      params.grid_dimensions, mpi_shape, mpi_shape, 0u);
   BOOST_CHECK_THROW(LB(lb_lattice_without_ghosts, 1., 1.), std::runtime_error);
 }
 
@@ -647,8 +647,8 @@ int main(int argc, char **argv) {
   params.density = 1.4;
   params.grid_dimensions = Vector3i{12, 12, 18};
   params.box_dimensions = Vector3d{12, 12, 18};
-  params.lattice =
-      std::make_shared<LatticeWalberla>(params.grid_dimensions, mpi_shape, 1u);
+  params.lattice = std::make_shared<LatticeWalberla>(params.grid_dimensions,
+                                                     mpi_shape, mpi_shape, 1u);
 
   auto const res = boost::unit_test::unit_test_main(init_unit_test, argc, argv);
   MPI_Finalize();

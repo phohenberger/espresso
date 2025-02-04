@@ -203,8 +203,8 @@ int main(int argc, char **argv) {
   params.density = 1.4;
   params.grid_dimensions = Vector3i{12, 6, 9};
   params.box_dimensions = Vector3d{12, 6, 9};
-  params.lattice =
-      std::make_shared<LatticeWalberla>(params.grid_dimensions, mpi_shape, 1u);
+  params.lattice = std::make_shared<LatticeWalberla>(params.grid_dimensions,
+                                                     mpi_shape, mpi_shape, 1u);
 
   auto const res = boost::unit_test::unit_test_main(init_unit_test, argc, argv);
   MPI_Finalize();

@@ -40,8 +40,10 @@
 
 LatticeWalberla::LatticeWalberla(Utils::Vector3i const &grid_dimensions,
                                  Utils::Vector3i const &node_grid,
+                                 Utils::Vector3i const &block_grid,
                                  unsigned int n_ghost_layers)
-    : m_grid_dimensions{grid_dimensions}, m_n_ghost_layers{n_ghost_layers} {
+    : m_grid_dimensions{grid_dimensions}, m_node_grid{node_grid},
+      m_n_ghost_layers{n_ghost_layers} {
   using walberla::real_t;
   using walberla::uint_c;
 
@@ -50,21 +52,28 @@ LatticeWalberla::LatticeWalberla(Utils::Vector3i const &grid_dimensions,
       throw std::runtime_error(
           "Lattice grid dimensions and MPI node grid are not compatible.");
     }
+    if (m_grid_dimensions[i] % block_grid[i] != 0) {
+      throw std::runtime_error(
+          "Lattice grid dimensions and block grid are not compatible.");
+    }
   }
 
   auto constexpr lattice_constant = real_t{1};
-  auto const cells_block = Utils::hadamard_division(grid_dimensions, node_grid);
+  auto const cells_per_block =
+      Utils::hadamard_division(grid_dimensions, block_grid);
 
   m_blocks = walberla::blockforest::createUniformBlockGrid(
       // number of blocks in each direction
-      uint_c(node_grid[0]), uint_c(node_grid[1]), uint_c(node_grid[2]),
+      uint_c(block_grid[0]), uint_c(block_grid[1]), uint_c(block_grid[2]),
       // number of cells per block in each direction
-      uint_c(cells_block[0]), uint_c(cells_block[1]), uint_c(cells_block[2]),
-      lattice_constant,
+      uint_c(cells_per_block[0]), uint_c(cells_per_block[1]),
+      uint_c(cells_per_block[2]), lattice_constant,
       // number of cpus per direction
       uint_c(node_grid[0]), uint_c(node_grid[1]), uint_c(node_grid[2]),
       // periodicity
-      true, true, true);
+      true, true, true,
+      // keep global block information
+      false);
   for (IBlock &block : *m_blocks) {
     m_cached_blocks.push_back(&block);
   }
@@ -73,11 +82,34 @@ LatticeWalberla::LatticeWalberla(Utils::Vector3i const &grid_dimensions,
 [[nodiscard]] std::pair<Utils::Vector3d, Utils::Vector3d>
 LatticeWalberla::get_local_domain() const {
   using walberla::to_vector3d;
-  // We only have one block per mpi rank
-  assert(++(m_blocks->begin()) == m_blocks->end());
+  // Get upper and lower corner of BlockForest assigned to a mpi rank.
+  // Since we can allocate multiple blocks per mpi rank,
+  // the corners of all Blocks are compared.
+  auto aa = to_vector3d(m_blocks->begin()->getAABB().min());
+  auto bb = to_vector3d(m_blocks->begin()->getAABB().max());
+  for (auto const &block : *m_blocks) {
+    auto cc = block.getAABB();
+    for (auto const i : {0u, 1u, 2u}) {
+      aa[i] = std::min(aa[i], cc.min()[i]);
+      bb[i] = std::max(bb[i], cc.max()[i]);
+    }
+  }
+  return {aa, bb};
+}
 
-  auto const ab = m_blocks->begin()->getAABB();
-  return {to_vector3d(ab.min()), to_vector3d(ab.max())};
+[[nodiscard]] std::pair<Utils::Vector3i, Utils::Vector3i>
+LatticeWalberla::get_local_grid_range() const {
+  auto const [lower_corner, upper_corner] = get_local_domain();
+  return {walberla::convert_cell_corner_to_coord(lower_corner),
+          walberla::convert_cell_corner_to_coord(upper_corner)};
+}
+
+[[nodiscard]] Utils::Vector3i
+LatticeWalberla::get_block_corner(IBlock const &block, bool lower) const {
+  if (lower) {
+    return walberla::get_min_corner(block);
+  }
+  return walberla::get_max_corner(block);
 }
 
 [[nodiscard]] bool

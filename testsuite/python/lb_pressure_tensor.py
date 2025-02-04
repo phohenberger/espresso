@@ -156,6 +156,14 @@ class TestLBPressureTensorCPU(TestLBPressureTensor, ut.TestCase):
     steps = 5000
 
 
+@utx.skipIfMissingFeatures("WALBERLA")
+class TestLBPressureTensorBlocksCPU(TestLBPressureTensor, ut.TestCase):
+
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": True, "blocks_per_mpi_rank": [2, 2, 2]}
+    steps = 5000
+
+
 # TODO WALBERLA
 """
 @utx.skipIfMissingFeatures("WALBERLA")

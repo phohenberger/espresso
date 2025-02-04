@@ -55,6 +55,7 @@ class LBInterpolation:
     system = espressomd.System(box_l=[BOX_L] * 3)
     system.cell_system.skin = 0.4 * AGRID
     system.time_step = TIME_STEP
+    system.periodicity = [False, True, True]
 
     def setUp(self):
         self.lbf = self.lb_class(**LB_PARAMETERS, **self.lb_params)
@@ -185,6 +186,20 @@ class LBInterpolationWalberlaDoublePrecisionGPU(LBInterpolation, ut.TestCase):
 class LBInterpolationWalberlaSinglePrecisionGPU(LBInterpolation, ut.TestCase):
     lb_class = espressomd.lb.LBFluidWalberlaGPU
     lb_params = {"single_precision": True}
+
+
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBInterpolationWalberlaDoublePrecisionBlocksCPU(
+        LBInterpolation, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [2, 2, 2]}
+
+
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBInterpolationWalberlaSinglePrecisionBlocksCPU(
+        LBInterpolation, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": True, "blocks_per_mpi_rank": [2, 2, 2]}
 
 
 if __name__ == "__main__":

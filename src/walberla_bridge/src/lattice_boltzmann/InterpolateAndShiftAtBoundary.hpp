@@ -34,16 +34,23 @@
 namespace walberla {
 
 /**
- * Lees-Edwards sweep.
- * @todo Currently only works for 1 MPI rank! It should work in parallel if the
- * MPI domain decomposition for the structured block forest doesn't partition
- * along the shear direction. For example if the shear direction goes along
- * the z-axis, it should be possible to run on 4 MPI ranks with [2, 2, 1].
+ * @brief Lees-Edwards sweep.
+ *
+ * @todo Currently is constrained by the blockforest domain decomposition.
+ * It only works if the structured block forest domain decomposition doesn't
+ * partition along the shear direction or the normal direction.
+ * The normal direction cannot be sliced, since we need full access to the
+ * sheared layer population on the opposite side of the box during the
+ * interpolation (we don't use the ghost populations).
+ * The shear direction cannot be sliced, because the ghost layer might not
+ * contain the data if the offset is larger than the ghost layer thickness.
+ *
+ * As a practical example, consider a simulation where the shear direction is
+ * the z-axis, it is possible to run on 2 MPI ranks with MPI Cartesian topology
+ * [2, 1, 1].
  * At the moment, ESPResSo requires system.cell_system.node_grid to be in
  * decreasing order, therefore parallelization requires a shear direction
- * along the z-axis and a MPI node_grid of [x, y, 1] with x >= y. This
- * restriction on the ordering of the node_grid may be lifted in the
- * distant future, when our FFT algorithm is replaced by a new one.
+ * along the z-axis and a MPI node_grid of [x, y, 1] with x >= y.
  */
 template <class FieldType, typename FloatType>
 class InterpolateAndShiftAtBoundary {

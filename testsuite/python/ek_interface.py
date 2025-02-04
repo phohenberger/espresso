@@ -210,6 +210,14 @@ class EKTest:
             ek_species.rng_state = -2
         with self.assertRaisesRegex(RuntimeError, "This EK instance is unthermalized"):
             ek_species.rng_state = 5
+        incompatible_lattice = self.ek_lattice_class(
+            n_ghost_layers=1, agrid=self.params["agrid"],
+            blocks_per_mpi_rank=[2, 1, 1])
+        with self.assertRaisesRegex(NotImplementedError, "Using more than one block per MPI rank is not supported for EKSpecies"):
+            self.ek_species_class(
+                lattice=incompatible_lattice,
+                **self.ek_params,
+                **self.ek_species_params)
 
     def test_ek_solver_exceptions(self):
         ek_solver = self.system.ekcontainer.solver
@@ -229,6 +237,11 @@ class EKTest:
             self.system.ekcontainer.solver = incompatible_ek_solver
             self.system.ekcontainer.add(incompatible_ek_species)
             self.system.ekcontainer.solver = ek_solver
+        incompatible_lattice = self.ek_lattice_class(
+            n_ghost_layers=1, agrid=self.params["agrid"],
+            blocks_per_mpi_rank=[2, 1, 1])
+        with self.assertRaisesRegex(NotImplementedError, "Using more than one block per MPI rank is not supported for EKNone"):
+            espressomd.electrokinetics.EKNone(lattice=incompatible_lattice)
 
     def test_parameter_change_exceptions(self):
         ek_solver = self.system.ekcontainer.solver

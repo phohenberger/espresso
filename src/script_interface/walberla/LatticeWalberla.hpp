@@ -43,6 +43,7 @@ class LatticeWalberla : public AutoParameters<LatticeWalberla> {
   std::shared_ptr<::LatticeWalberla> m_lattice;
   double m_agrid;
   Utils::Vector3d m_box_l;
+  Utils::Vector3i m_blocks_per_mpi_rank;
 
 public:
   LatticeWalberla() {
@@ -53,6 +54,8 @@ public:
         {"shape", AutoParameter::read_only,
          [this]() { return m_lattice->get_grid_dimensions(); }},
         {"_box_l", AutoParameter::read_only, [this]() { return m_box_l; }},
+        {"blocks_per_mpi_rank", AutoParameter::read_only,
+         [this]() { return m_blocks_per_mpi_rank; }},
     });
   }
 
@@ -60,7 +63,11 @@ public:
     auto const &box_geo = *::System::get_system().box_geo;
     m_agrid = get_value<double>(args, "agrid");
     m_box_l = get_value_or<Utils::Vector3d>(args, "_box_l", box_geo.length());
+    m_blocks_per_mpi_rank =
+        get_value<Utils::Vector3i>(args, "blocks_per_mpi_rank");
     auto const n_ghost_layers = get_value<int>(args, "n_ghost_layers");
+    auto const block_grid = Utils::hadamard_product(::communicator.node_grid,
+                                                    m_blocks_per_mpi_rank);
 
     context()->parallel_try_catch([&]() {
       if (m_agrid <= 0.) {
@@ -69,10 +76,13 @@ public:
       if (n_ghost_layers < 0) {
         throw std::domain_error("Parameter 'n_ghost_layers' must be >= 0");
       }
+      if (not(m_blocks_per_mpi_rank >= Utils::Vector3i::broadcast(1))) {
+        throw std::domain_error("Parameter 'blocks_per_mpi_rank' must be >= 1");
+      }
       auto const grid_dim =
           ::LatticeWalberla::calc_grid_dimensions(m_box_l, m_agrid);
       m_lattice = std::make_shared<::LatticeWalberla>(
-          grid_dim, ::communicator.node_grid,
+          grid_dim, ::communicator.node_grid, block_grid,
           static_cast<unsigned int>(n_ghost_layers));
     });
   }

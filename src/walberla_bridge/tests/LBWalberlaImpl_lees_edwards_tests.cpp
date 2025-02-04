@@ -70,8 +70,8 @@ BOOST_AUTO_TEST_CASE(test_transient_shear) {
   using LBImplementation = walberla::LBWalberlaImpl<double, lbmpy::Arch::CPU>;
   double density = 1;
   double viscosity = 1. / 7.;
-  auto lattice =
-      std::make_shared<LatticeWalberla>(Vector3i{8, 64, 8}, mpi_shape, 1);
+  auto lattice = std::make_shared<LatticeWalberla>(Vector3i{8, 64, 8},
+                                                   mpi_shape, mpi_shape, 1);
   auto lb = LBImplementation(lattice, viscosity, density);
   auto le_pack = std::make_unique<LeesEdwardsPack>(
       0u, 1u, []() { return 0.0; }, [=]() { return v0; });
@@ -95,8 +95,8 @@ static auto setup_lb_with_offset(double offset) {
   using LBImplementation = walberla::LBWalberlaImpl<double, lbmpy::Arch::CPU>;
   auto density = 1.;
   auto viscosity = 1. / 7.;
-  auto lattice =
-      std::make_shared<LatticeWalberla>(Vector3i{10, 10, 10}, mpi_shape, 1);
+  auto lattice = std::make_shared<LatticeWalberla>(Vector3i{10, 10, 10},
+                                                   mpi_shape, mpi_shape, 1);
   auto lb = std::make_shared<LBImplementation>(lattice, viscosity, density);
   auto le_pack = std::make_unique<LeesEdwardsPack>(
       0u, 1u, [=]() { return offset; }, []() { return 0.0; });

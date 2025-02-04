@@ -52,14 +52,14 @@ class Test(ut.TestCase):
             obj.agrid = 2.
         with self.assertRaisesRegex(RuntimeError, "Parameter 'n_ghost_layers' is read-only"):
             obj.n_ghost_layers = 2
-        with self.assertRaisesRegex(RuntimeError, "Parameter 'n_ghost_layers' is missing"):
-            LatticeWalberla(agrid=1.)
         with self.assertRaisesRegex(ValueError, "Parameter 'n_ghost_layers' must be >= 0"):
             LatticeWalberla(agrid=1., n_ghost_layers=-1)
         with self.assertRaisesRegex(ValueError, "Parameter 'agrid' must be > 0"):
             LatticeWalberla(agrid=0., n_ghost_layers=1)
         with self.assertRaisesRegex(ValueError, "Parameter 'agrid' must be > 0"):
             LatticeWalberla(agrid=-1., n_ghost_layers=1)
+        with self.assertRaisesRegex(ValueError, "Parameter 'blocks_per_mpi_rank' must be >= 1"):
+            LatticeWalberla(agrid=1., blocks_per_mpi_rank=[1, 0, 1])
         with self.assertRaisesRegex(ValueError, "Parameter 'shape' must be derived from espressomd.shapes.Shape"):
             obj = LatticeWalberla(agrid=1., n_ghost_layers=1)
             next(obj.get_node_indices_inside_shape(10))

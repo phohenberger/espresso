@@ -67,6 +67,7 @@ class CheckpointTest(ut.TestCase):
     checkpoint.load(0)
     checkpoint.save(1)
     path_cpt_root = pathlib.Path(checkpoint.checkpoint_dir)
+    n_nodes = system.cell_system.get_state()["n_nodes"]
 
     @classmethod
     def setUpClass(cls):
@@ -138,6 +139,22 @@ class CheckpointTest(ut.TestCase):
             self.assertIn(key, state)
             np.testing.assert_allclose(np.copy(state[key]), reference[key],
                                        atol=1E-7, err_msg=f"{key} differs")
+
+        state = lbf.lattice.get_params()
+        reference = {"agrid": 2.0, "n_ghost_layers": 1,
+                     "blocks_per_mpi_rank": [1, 1, 1]}
+        for key in reference:
+            self.assertIn(key, state)
+            np.testing.assert_allclose(np.copy(state[key]), reference[key],
+                                       atol=1E-7, err_msg=f"{key} differs")
+
+        state = lb_lattice_blocks_per_mpi.get_params()
+        reference["blocks_per_mpi_rank"] = [1, 1, 2]
+        for key in reference:
+            self.assertIn(key, state)
+            np.testing.assert_allclose(np.copy(state[key]), reference[key],
+                                       atol=1E-7, err_msg=f"{key} differs")
+
         self.assertTrue(lbf.is_active)
         if "LB.CPU" in modes:
             self.assertFalse(lbf.single_precision)
@@ -375,10 +392,12 @@ class CheckpointTest(ut.TestCase):
 
     @ut.skipIf('LB.GPU' in modes, 'Lees-Edwards not implemented for LB GPU')
     @ut.skipIf('INT.NPT' in modes, 'Lees-Edwards not compatible with NPT')
+    @ut.skipIf('LB' in modes and n_nodes not in (1, 2, 3),
+               'Lees-Edwards not implemented for certain decompositions')
     def test_lees_edwards(self):
         lebc = system.lees_edwards
         protocol = lebc.protocol
-        self.assertEqual(lebc.shear_direction, "x")
+        self.assertEqual(lebc.shear_direction, "z")
         self.assertEqual(lebc.shear_plane_normal, "y")
         self.assertIsInstance(protocol, espressomd.lees_edwards.LinearShear)
         self.assertAlmostEqual(protocol.initial_pos_offset, 0.1, delta=1e-10)

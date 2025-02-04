@@ -27,6 +27,12 @@ import espressomd.detail.walberla
 import espressomd.shapes
 
 
+def _check_lattice_blocks(class_name, pack):
+    if "lattice" in pack and np.prod(pack["lattice"].blocks_per_mpi_rank) != 1:
+        raise NotImplementedError(
+            f"Using more than one block per MPI rank is not supported for {class_name}")
+
+
 @script_interface_register
 class EKFFT(ScriptInterfaceHelper):
     """
@@ -46,6 +52,10 @@ class EKFFT(ScriptInterfaceHelper):
     _so_features = ("WALBERLA_FFT",)
     _so_creation_policy = "GLOBAL"
 
+    def __init__(self, *args, **kwargs):
+        _check_lattice_blocks(self.__class__.__name__, kwargs)
+        super().__init__(*args, **kwargs)
+
 
 @script_interface_register
 class EKNone(ScriptInterfaceHelper):
@@ -63,6 +73,10 @@ class EKNone(ScriptInterfaceHelper):
     _so_name = "walberla::EKNone"
     _so_features = ("WALBERLA",)
     _so_creation_policy = "GLOBAL"
+
+    def __init__(self, *args, **kwargs):
+        _check_lattice_blocks(self.__class__.__name__, kwargs)
+        super().__init__(*args, **kwargs)
 
 
 @script_interface_register
@@ -167,6 +181,7 @@ class EKSpecies(ScriptInterfaceHelper,
         if "sip" not in kwargs:
             params = self.default_params()
             params.update(kwargs)
+            _check_lattice_blocks(self.__class__.__name__, params)
             super().__init__(*args, **params)
         else:
             super().__init__(**kwargs)
@@ -580,6 +595,7 @@ class VTKOutput(VTKOutputBase):
     _so_name = "walberla::EKVTKHandle"
     _so_creation_policy = "GLOBAL"
     _so_bind_methods = ("enable", "disable", "write")
+    _so_features = ("WALBERLA",)
 
     def required_keys(self):
         return self.valid_keys() - self.default_params().keys()

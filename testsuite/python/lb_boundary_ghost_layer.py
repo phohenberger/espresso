@@ -117,5 +117,12 @@ class LBPoiseuilleWalberlaDoublePrecisionGPU(TestCommon, ut.TestCase):
     lb_params = {"single_precision": False}
 
 
+@utx.skipIfMissingFeatures(["WALBERLA"])
+# @ut.skipIf(TestCommon.n_nodes != 2, "only runs for 2 MPI ranks")
+class LBPoiseuilleWalberlaDoublePrecisionBlocksCPU(TestCommon, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [2, 1, 1]}
+
+
 if __name__ == "__main__":
     ut.main()

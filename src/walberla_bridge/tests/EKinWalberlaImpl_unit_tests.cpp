@@ -570,8 +570,8 @@ int main(int argc, char **argv) {
   params.ext_efield = Vector3d{0.01, 0.02, 0.03};
   params.grid_dimensions = Vector3i{12, 12, 18};
   params.box_dimensions = Vector3d{12, 12, 18};
-  params.lattice =
-      std::make_shared<LatticeWalberla>(params.grid_dimensions, mpi_shape, 1u);
+  params.lattice = std::make_shared<LatticeWalberla>(params.grid_dimensions,
+                                                     mpi_shape, mpi_shape, 1u);
 
   auto const res = boost::unit_test::unit_test_main(init_unit_test, argc, argv);
   MPI_Finalize();
