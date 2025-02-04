@@ -22,22 +22,31 @@ import itertools
 import numpy as np
 
 import espressomd.shapes
-import espressomd.code_features
 from espressomd.script_interface import ScriptInterfaceHelper, script_interface_register
 
 
 @script_interface_register
 class LatticeWalberla(ScriptInterfaceHelper):
     """
-    Interface to a waBLerla lattice.
+    Interface to a waLBerla lattice.
+
+    Parameters
+    ----------
+    agrid : :obj:`float`
+        Lattice constant. The box size in every direction must be an integer
+        multiple of ``agrid``. Cannot be provided together with ``lattice``.
+    n_ghost_layers : :obj:`int`, optional
+        Lattice ghost layer thickness in units of ``agrid``.
+    blocks_per_mpi_rank : (3,) array_like of :obj:`int`, optional
+        Distribute more than one block to each MPI rank.
+        Meant to improve cache locality. Experimental.
+
     """
     _so_name = "walberla::LatticeWalberla"
     _so_creation_policy = "GLOBAL"
+    _so_features = ("WALBERLA",)
 
     def __init__(self, *args, **kwargs):
-        if not espressomd.code_features.has_features("WALBERLA"):
-            raise NotImplementedError("Feature WALBERLA not compiled in")
-
         if "sip" not in kwargs:
             params = self.default_params()
             params.update(kwargs)
@@ -46,14 +55,17 @@ class LatticeWalberla(ScriptInterfaceHelper):
         else:
             super().__init__(**kwargs)
 
-    def valid_keys(self):
-        return {"agrid", "n_ghost_layers"}
+    @classmethod
+    def valid_keys(cls):
+        return {"agrid", "n_ghost_layers", "blocks_per_mpi_rank"}
 
-    def required_keys(self):
-        return self.valid_keys()
+    @classmethod
+    def required_keys(cls):
+        return {"agrid"}
 
-    def default_params(self):
-        return {}
+    @classmethod
+    def default_params(cls):
+        return {"n_ghost_layers": 1, "blocks_per_mpi_rank": [1, 1, 1]}
 
     def get_node_indices_inside_shape(self, shape):
         if not isinstance(shape, espressomd.shapes.Shape):
@@ -146,10 +158,9 @@ def get_slice_bounding_box(slices, grid_size):
 
 
 class VTKOutputBase(ScriptInterfaceHelper):
+    _so_features = ("WALBERLA",)
 
     def __init__(self, *args, **kwargs):
-        if not espressomd.code_features.has_features("WALBERLA"):
-            raise NotImplementedError("Feature WALBERLA not compiled in")
         if "sip" not in kwargs:
             params = self.default_params()
             params.update(kwargs)

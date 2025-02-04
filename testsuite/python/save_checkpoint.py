@@ -59,6 +59,7 @@ system.time = 1.5
 system.force_cap = 1e8
 system.min_global_cut = 2.0
 system.max_oif_objects = 5
+n_nodes = system.cell_system.get_state()["n_nodes"]
 
 # create checkpoint folder
 config.cleanup_old_checkpoint()
@@ -71,11 +72,12 @@ for filepath in path_cpt_root.iterdir():
     filepath.unlink(missing_ok=True)
 
 # Lees-Edwards boundary conditions
-if 'INT.NPT' not in modes and 'LB.GPU' not in modes:
+if 'INT.NPT' not in modes and 'LB.GPU' not in modes and (
+        'LB' not in modes or n_nodes in (1, 2, 3)):
     protocol = espressomd.lees_edwards.LinearShear(
         initial_pos_offset=0.1, time_0=0.2, shear_velocity=1.2)
     system.lees_edwards.set_boundary_conditions(
-        shear_direction="x", shear_plane_normal="y", protocol=protocol)
+        shear_direction="z", shear_plane_normal="y", protocol=protocol)
 
 has_ase = "ASE" in modes
 
@@ -86,7 +88,11 @@ if espressomd.has_features('WALBERLA') and 'LB.WALBERLA' in modes:
         lbf_class = espressomd.lb.LBFluidWalberlaGPU
     elif 'LB.CPU' in modes:
         lbf_class = espressomd.lb.LBFluidWalberla
-    lb_lattice = espressomd.lb.LatticeWalberla(agrid=2.0, n_ghost_layers=1)
+    lb_lattice_kwargs = {'agrid': 2.0, 'n_ghost_layers': 1}
+    lb_lattice = espressomd.lb.LatticeWalberla(**lb_lattice_kwargs)
+    lb_lattice_kwargs['blocks_per_mpi_rank'] = [1, 1, 2]
+    lb_lattice_blocks_per_mpi = espressomd.lb.LatticeWalberla(
+        **lb_lattice_kwargs)
 if lbf_class:
     lbf_cpt_mode = 0 if 'LB.ASCII' in modes else 1
     lbf = lbf_class(
@@ -318,6 +324,8 @@ checkpoint.register("ibm_volcons_bond")
 checkpoint.register("ibm_tribend_bond")
 checkpoint.register("ibm_triel_bond")
 checkpoint.register("break_spec")
+if espressomd.has_features('WALBERLA') and 'LB.WALBERLA' in modes:
+    checkpoint.register("lb_lattice_blocks_per_mpi")
 
 # calculate forces
 system.integrator.run(0)

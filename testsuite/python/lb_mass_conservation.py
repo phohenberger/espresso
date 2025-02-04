@@ -41,7 +41,7 @@ class LBMassCommon:
 
     """Check the lattice-Boltzmann mass conservation."""
 
-    system = espressomd.System(box_l=[3.0, 3.0, 3.0])
+    system = espressomd.System(box_l=[4.0, 4.0, 4.0])
     system.time_step = TIME_STEP
     system.cell_system.skin = 0.4 * AGRID
 
@@ -94,6 +94,14 @@ class LBMassWalberlaSinglePrecisionGPU(LBMassCommon, ut.TestCase):
     lb_class = espressomd.lb.LBFluidWalberlaGPU
     lb_params = {"single_precision": True}
     atol = 5e-7
+
+
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBMassWalberlaDoublePrecisionBlocksCPU(LBMassCommon, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False,
+                 "blocks_per_mpi_rank": [1, 1, 2]}
+    atol = 1e-10
 
 
 if __name__ == '__main__':

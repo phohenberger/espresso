@@ -200,5 +200,19 @@ class LBTestWalberlaSinglePrecisionGPU(LBTest, ut.TestCase):
     lb_params = {"single_precision": True}
 
 
+@utx.skipIfMissingFeatures("WALBERLA")
+class LBTestWalberlaDoublePrecisionBlocksCPU(LBTest, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_lattice_class = espressomd.lb.LatticeWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [1, 1, 2]}
+
+
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBTestWalberlaSinglePrecisionBlocksCPU(LBTest, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_lattice_class = espressomd.lb.LatticeWalberla
+    lb_params = {"single_precision": True, "blocks_per_mpi_rank": [1, 1, 2]}
+
+
 if __name__ == "__main__":
     ut.main()

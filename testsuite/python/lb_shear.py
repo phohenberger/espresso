@@ -85,7 +85,7 @@ class LBShearCommon:
     system.cell_system.skin = 0.4 * AGRID
 
     def setUp(self):
-        self.lbf = self.lb_class(**LB_PARAMS, **self.lb_params)
+        self.system.lb = None
 
     def tearDown(self):
         self.system.lb = None
@@ -96,9 +96,11 @@ class LBShearCommon:
         the exact solution.
         """
         self.tearDown()
-        self.system.box_l = np.max(
+        blocks_per_mpi_rank = np.array(
+            self.lb_params.get("blocks_per_mpi_rank", [1, 1, 1]))
+        self.system.box_l = blocks_per_mpi_rank * np.max(
             ((W, W, W), shear_plane_normal * (H + 2 * AGRID)), 0)
-        self.setUp()
+        self.lbf = self.lb_class(**LB_PARAMS, **self.lb_params)
         self.system.lb = self.lbf
         self.lbf.clear_boundaries()
 
@@ -202,6 +204,18 @@ class LBShearWalberlaSinglePrecision(LBShearCommon, ut.TestCase):
     lb_params = {"single_precision": True}
     atol = 5e-5
     rtol = 5e-3
+
+
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBShearWalberlaBlocks(LBShearCommon, ut.TestCase):
+
+    """Test for the Walberla implementation of the LB in double-precision."""
+
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False,
+                 "blocks_per_mpi_rank": [2, 2, 2]}
+    atol = 5e-5
+    rtol = 5e-4
 
 
 if __name__ == '__main__':
