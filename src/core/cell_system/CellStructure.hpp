@@ -656,7 +656,7 @@ public:
       });
       m_rebuild_verlet_list = false;
     } 
-    for (auto &pair : m_verlet_list) {
+    for (auto const &pair : m_verlet_list) {
       kernel(*pair.first, *pair.second);
     } 
   }

@@ -49,6 +49,20 @@ struct pair_hash {
 
 // ===================================================
 
+template <class SliceDouble3, class SliceInt>
+inline void write_particle(Particle const &p, std::unordered_map<int, int> const &id_to_index, SliceDouble3 &s_position, SliceDouble3 &s_force, SliceInt &s_id, SliceInt &s_type) {
+  auto const pos = p.pos();
+  auto const id = id_to_index.at(p.id());
+  s_position(id, 0) = pos[0];
+  s_position(id, 1) = pos[1];
+  s_position(id, 2) = pos[2];
+  s_id(id) = p.id();
+  s_type(id) = p.type();
+  s_force(id, 0) = 0.0;
+  s_force(id, 1) = 0.0;
+  s_force(id, 2) = 0.0;
+}
+
 template <class BondKernel,
           class VerletCriterion = detail::True>
 void cabana_short_range(BondKernel bond_kernel,
@@ -70,13 +84,16 @@ void cabana_short_range(BondKernel bond_kernel,
   // Cabana short range loop
   if (pair_cutoff > 0.) {
 
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     auto t1 = std::chrono::high_resolution_clock::now();
 
     // ===================================================
     // Setup Cabana Variables
     // ===================================================
     // Dont know where to do this better
-    using data_types = Cabana::MemberTypes<double[3], int, int, int, double[3]>;
+    using data_types = Cabana::MemberTypes<double[3], double[3], int, int, int>;
     using memory_space = Kokkos::SharedSpace;
     using execution_space = Kokkos::DefaultExecutionSpace;
 
@@ -92,9 +109,9 @@ void cabana_short_range(BondKernel bond_kernel,
     std::unordered_map<int, int> id_to_index;
     int index = 0;
 
-    bool rebuild = cell_structure.get_rebuild_verlet_list();
+    bool const rebuild = cell_structure.get_rebuild_verlet_list();
 
-    if (true) {
+    if (rebuild) {
       
       for (auto const& p : particles) {
         id_to_index[p.id()] = index;
@@ -107,8 +124,8 @@ void cabana_short_range(BondKernel bond_kernel,
           index++;
         }
       }
-      
-      //cell_structure.store_index_map(id_to_index);
+        
+      cell_structure.store_index_map(id_to_index);
 
     } else {
       id_to_index = cell_structure.get_stored_index_map();
@@ -117,52 +134,36 @@ void cabana_short_range(BondKernel bond_kernel,
 
     const int number_of_unique_particles = index;
 
+    //std::cout << "Rank: " << rank << std::endl;
+    //std::cout << "Rebuild: " << rebuild << std::endl;
+    //std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
+    //std::cout << "Number of particles: " << particles.size() << std::endl;
+    //std::cout << "Number of ghost particles: " << ghost_particles.size() << std::endl;
+
     auto t2 = std::chrono::high_resolution_clock::now();
 
     // ===================================================
     // Create and fill particle storage
     // ===================================================
 
-    // Maybe move to cell structure and only update positions?
-    // Only recalculate id/type etc when verlet recalculates
-    // Probably not worth it, writing is actually very fast.
-
-
     Cabana::AoSoA<data_types, memory_space, vector_length> particle_storage("particles", number_of_unique_particles);
     auto slice_position = Cabana::slice<0>(particle_storage);
-    auto slice_id = Cabana::slice<1>(particle_storage);
-    auto slice_type = Cabana::slice<2>(particle_storage);
-    auto slice_ghost = Cabana::slice<3>(particle_storage);
-    auto slice_force = Cabana::slice<4>(particle_storage);
+    auto slice_force = Cabana::slice<1>(particle_storage);
+    auto slice_id = Cabana::slice<2>(particle_storage);
+    auto slice_type = Cabana::slice<3>(particle_storage);
+    
 
     for (auto const& p : particles) {
-      auto const pos = p.pos();
-      auto const id = id_to_index.at(p.id());
-      slice_position(id, 0) = pos[0];
-      slice_position(id, 1) = pos[1];
-      slice_position(id, 2) = pos[2];
-      slice_id(id) = p.id();
-      slice_type(id) = p.type();
-      slice_ghost(id) = 0;
-      slice_force(id, 0) = 0.0;
-      slice_force(id, 1) = 0.0;
-      slice_force(id, 2) = 0.0;
+      write_particle(p, id_to_index, slice_position, slice_force, slice_id, slice_type);
     }
 
     for (auto const& p : ghost_particles) {
+      // if the ghost is not in the previous map, but mpi moved it to this rank?
+      // it will not have neighbors because we did not rebuild the verlet list.
       if (id_to_index.find(p.id()) == id_to_index.end()) {
-        auto const pos = p.pos();
-        auto const id = id_to_index.at(p.id());
-        slice_position(id, 0) = pos[0];
-        slice_position(id, 1) = pos[1];
-        slice_position(id, 2) = pos[2];
-        slice_id(id) = p.id();
-        slice_type(id) = p.type();
-        slice_ghost(id) = 1;
-        slice_force(id, 0) = 0.0;
-        slice_force(id, 1) = 0.0;
-        slice_force(id, 2) = 0.0;
+        continue;
       }
+      write_particle(p, id_to_index, slice_position, slice_force, slice_id, slice_type);
     }
 
     auto t3 = std::chrono::high_resolution_clock::now();
@@ -174,36 +175,22 @@ void cabana_short_range(BondKernel bond_kernel,
     auto t4 = std::chrono::high_resolution_clock::now();
 
     ListType verlet_list;
-
-    int counts = 0;
-
-    if (false) {
-      verlet_list = ListType(slice_position, 0, slice_position.size(), 16); 
-
-      auto kernel = [&](Particle &p1, Particle &p2) {
-        verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
-        counts++;
-      };
-        
-      cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
-    } else {
     
-      if (rebuild) {
+    if (rebuild) {
 
-        verlet_list = ListType(slice_position, 0, slice_position.size(), 16);
-        
-        auto kernel = [&](Particle &p1, Particle &p2) {
-          verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
-          counts++;
-        };
+      verlet_list = ListType(slice_position, 0, slice_position.size(), 64);
+      
+      auto kernel = [&](Particle const &p1, Particle const &p2) {
+        verlet_list.addNeighbor(id_to_index.at(p1.id()), id_to_index.at(p2.id()));
+      };
 
-        cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
-        cell_structure.store_verlet_list(verlet_list);
+      cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
+      cell_structure.store_verlet_list(verlet_list);
 
-      } else {
-        verlet_list = cell_structure.get_stored_verlet_list<ListType>();
-      }
+    } else {
+      verlet_list = cell_structure.get_stored_verlet_list<ListType>();
     }
+
 
     // fill customverletlist with pairs
     auto first_neighbor_kernel = KOKKOS_LAMBDA(const int i, const int j) {
@@ -237,12 +224,10 @@ void cabana_short_range(BondKernel bond_kernel,
 
 
     // TODO: Add option to switch "SerialOpTag" Between "TeamOpTag"
+    // Feels like TeamOpTag is faster, atleast for large particle numbers
     Cabana::neighbor_parallel_for(policy, first_neighbor_kernel, verlet_list,
                                     Cabana::FirstNeighborsTag(),
                                     Cabana::TeamOpTag(), "verlet_list");
-    
-    Kokkos::fence(); 
-
 
     auto t6 = std::chrono::high_resolution_clock::now();
 
@@ -259,28 +244,28 @@ void cabana_short_range(BondKernel bond_kernel,
        
     }
 
-    // Gives wrong results
-    /*
     for (auto & p : ghost_particles) {
-        // TODO: CHECK ID IN INDEX
+        if (id_to_index.find(p.id()) == id_to_index.end()) {
+          continue;
+        }
+
         auto const id = id_to_index.at(p.id());
         Utils::Vector3d f_vec{slice_force(id,0), slice_force(id, 1), slice_force(id, 2)};
         
         ParticleForce f(f_vec);
         p.force_and_torque() += f;
-    }*/
+    }
 
     auto t7 = std::chrono::high_resolution_clock::now();
 
-    //std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
-    //std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
-    //std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
-    //std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
-    //std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
-    //std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
-    //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << " " << counts << std::endl;
-    //std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
-
+    std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
+    std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
+    std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
+    std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
+    std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
+    std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
+    std::cout << "Total: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << std::endl;
+    
   }
 }
 
