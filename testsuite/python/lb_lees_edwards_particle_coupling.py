@@ -204,7 +204,8 @@ class LBLeesEdwardsParticleCoupling(ut.TestCase):
                 np.testing.assert_allclose(
                     np.copy(n.last_applied_force), -w * np.copy(p.f))
 
-    def check_velocity_interpolation(self, pos_offset, shear_vel, test_positions):
+    def check_velocity_interpolation(
+            self, pos_offset, shear_vel, test_positions):
         system.lb = None
         system.part.clear()
         system.time_step = 1

@@ -52,9 +52,9 @@ macro(espresso_minimal_compiler_version)
   endif()
 endmacro()
 
-espresso_minimal_compiler_version("GNU" 10.5.0)
-espresso_minimal_compiler_version("Clang" 14.0.0)
-espresso_minimal_compiler_version("AppleClang" 14.0.0)
+espresso_minimal_compiler_version("GNU" 12.2.0)
+espresso_minimal_compiler_version("Clang" 18.1.0)
+espresso_minimal_compiler_version("AppleClang" 16.0.0)
 espresso_minimal_compiler_version("IntelLLVM" 2023.1)
 
 set(UNSUPPORTED_COMPILERS "Intel;MSVC")
@@ -107,6 +107,7 @@ FetchContent_Declare(
   walberla
   GIT_REPOSITORY https://i10git.cs.fau.de/walberla/walberla.git
   GIT_TAG        f36fa0a68bae59f0b516f6587ea8fa7c24a41141
+  PATCH_COMMAND  patch -p0 < ${CMAKE_CURRENT_SOURCE_DIR}/cmake/walberla.patch
 )
 FetchContent_Declare(
   stokesian_dynamics
@@ -121,7 +122,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   caliper
   GIT_REPOSITORY https://github.com/LLNL/Caliper.git
-  GIT_TAG        v2.12.0
+  GIT_TAG        v2.12.1
 )
 # cmake-format: on
 
@@ -241,8 +242,6 @@ if(ESPRESSO_BUILD_WITH_CUDA)
   include(CheckLanguage)
   enable_language(CUDA)
   check_language(CUDA)
-  espresso_minimal_compiler_version("GNU" 11.4.0)
-  espresso_minimal_compiler_version("Clang" 17.0.0)
   set(CMAKE_CUDA_STANDARD 20)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)
   set(ESPRESSO_MINIMAL_CUDA_VERSION 12.0)
@@ -269,7 +268,7 @@ if(ESPRESSO_BUILD_WITH_CUDA)
         FATAL_ERROR
           "Cannot enable code coverage with Clang as the CUDA compiler")
     endif()
-    find_package(CUDACompilerClang 17.0 REQUIRED)
+    find_package(CUDACompilerClang 18.1.0 REQUIRED)
   else()
     message(FATAL_ERROR "Unknown CUDA compiler '${CMAKE_CUDA_COMPILER_ID}'")
   endif()
@@ -776,10 +775,10 @@ if(ESPRESSO_BUILD_WITH_WALBERLA)
       walberla::boundary walberla::field walberla::lbm walberla::timeloop
       walberla::vtk)
   if(WALBERLA_BUILD_WITH_FFTW)
-    set(WALBERLA_LIBS ${WALBERLA_LIBS} walberla::fft)
+    list(APPEND WALBERLA_LIBS walberla::fft)
   endif()
   if(WALBERLA_BUILD_WITH_CUDA)
-    set(WALBERLA_LIBS ${WALBERLA_LIBS} walberla::gpu)
+    list(APPEND WALBERLA_LIBS walberla::gpu)
   endif()
   set(WALBERLA_LIBS_EXPORT
       ${WALBERLA_LIBS}

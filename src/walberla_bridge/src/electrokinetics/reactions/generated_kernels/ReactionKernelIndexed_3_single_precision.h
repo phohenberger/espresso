@@ -121,7 +121,7 @@ public:
       : indexVectorID(indexVectorID_), rho_0ID(rho_0ID_), rho_1ID(rho_1ID_),
         rho_2ID(rho_2ID_), order_0_(order_0), order_1_(order_1),
         order_2_(order_2), rate_coefficient_(rate_coefficient),
-        stoech_0_(stoech_0), stoech_1_(stoech_1), stoech_2_(stoech_2){};
+        stoech_0_(stoech_0), stoech_1_(stoech_1), stoech_2_(stoech_2) {}
 
   void run(IBlock *block);
 

@@ -1,4 +1,4 @@
-image: ghcr.io/espressomd/docker/ubuntu:f7f8ef2c0ca93c67aa16b9f91785492fb04ecc1b
+image: ghcr.io/espressomd/docker/ubuntu:77a3823c5c4c2338c39eb0e0f054b5802f0f2a5e
 
 stages:
   - prepare
@@ -17,7 +17,7 @@ stages:
 
 .notification_job_template: &notification_job_definition
   <<: *global_job_definition
-  image: ghcr.io/espressomd/docker/fedora:f7f8ef2c0ca93c67aa16b9f91785492fb04ecc1b
+  image: ghcr.io/espressomd/docker/fedora:77a3823c5c4c2338c39eb0e0f054b5802f0f2a5e
   variables:
     GET_SOURCES_ATTEMPTS: 3
   before_script:
@@ -77,9 +77,9 @@ default:
   <<: *global_job_definition
   stage: build
   variables:
-     CC: 'gcc-13'
-     CXX: 'g++-13'
-     GCOV: 'gcov-13'
+     CC: 'gcc-14'
+     CXX: 'g++-14'
+     GCOV: 'gcov-14'
      with_cuda: 'false'
      myconfig: 'default'
      with_coverage: 'true'
@@ -98,9 +98,9 @@ maxset:
   <<: *global_job_definition
   stage: build
   variables:
-     CC: 'gcc-13'
-     CXX: 'g++-13'
-     GCOV: 'gcov-13'
+     CC: 'gcc-14'
+     CXX: 'g++-14'
+     GCOV: 'gcov-14'
      with_cuda: 'false'
      myconfig: 'maxset'
      with_coverage: 'true'
@@ -122,9 +122,9 @@ no_rotation:
   <<: *global_job_definition
   stage: build
   variables:
-     CC: 'gcc-13'
-     CXX: 'g++-13'
-     GCOV: 'gcov-13'
+     CC: 'gcc-14'
+     CXX: 'g++-14'
+     GCOV: 'gcov-14'
      with_cuda: 'false'
      myconfig: 'no_rotation'
      with_coverage: 'true'
@@ -138,10 +138,10 @@ no_rotation:
     - no-cuda
     - numa
 
-fedora:40:
+fedora:41:
   <<: *global_job_definition
   stage: build
-  image: ghcr.io/espressomd/docker/fedora:f7f8ef2c0ca93c67aa16b9f91785492fb04ecc1b
+  image: ghcr.io/espressomd/docker/fedora:77a3823c5c4c2338c39eb0e0f054b5802f0f2a5e
   variables:
      with_cuda: 'false'
      with_gsl: 'false'
@@ -163,9 +163,9 @@ clang-sanitizer:
   <<: *global_job_definition
   stage: build
   variables:
-     CC: 'clang-18'
-     CXX: 'clang++-18'
-     CUDACXX: 'clang++-18'
+     CC: 'clang-19'
+     CXX: 'clang++-19'
+     CUDACXX: 'clang++-19'
      myconfig: 'maxset'
      with_cuda: 'true'
      with_cuda_compiler: 'clang'
@@ -411,9 +411,9 @@ empty:
   <<: *global_job_definition
   stage: build
   variables:
-     CC: 'clang-18'
-     CXX: 'clang++-18'
-     CUDACXX: 'clang++-18'
+     CC: 'clang-19'
+     CXX: 'clang++-19'
+     CUDACXX: 'clang++-19'
      myconfig: 'empty'
      with_cuda: 'true'
      with_cuda_compiler: 'clang'

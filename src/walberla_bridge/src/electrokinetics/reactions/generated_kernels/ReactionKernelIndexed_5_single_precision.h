@@ -130,7 +130,7 @@ public:
         order_3_(order_3), order_4_(order_4),
         rate_coefficient_(rate_coefficient), stoech_0_(stoech_0),
         stoech_1_(stoech_1), stoech_2_(stoech_2), stoech_3_(stoech_3),
-        stoech_4_(stoech_4){};
+        stoech_4_(stoech_4) {}
 
   void run(IBlock *block);
 
