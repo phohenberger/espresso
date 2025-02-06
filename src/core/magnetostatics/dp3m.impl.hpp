@@ -35,6 +35,7 @@
 
 #include <utils/Vector.hpp>
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -46,9 +47,9 @@ template <typename FloatType>
 struct p3m_data_struct_dipoles : public p3m_data_struct<FloatType> {
   using p3m_data_struct<FloatType>::p3m_data_struct;
 
-  /** number of dipolar particles (only on head node). */
-  int sum_dip_part = 0;
-  /** Sum of square of magnetic dipoles (only on head node). */
+  /** number of dipolar particles. */
+  std::size_t sum_dip_part = 0;
+  /** Sum of square of magnetic dipoles. */
   double sum_mu2 = 0.;
 
   /** position shift for calculation of first assignment mesh point. */

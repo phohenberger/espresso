@@ -39,6 +39,13 @@
 #include <functional>
 #include <span>
 
+static void check_convergence(int cnt, char const *const name) {
+  static constexpr char const *const msg = " failed to converge after ";
+  if (cnt >= SHAKE_MAX_ITERATIONS) {
+    runtimeErrorMsg() << name << msg << cnt << " iterations";
+  }
+}
+
 /**
  * @brief copy current position
  *
@@ -168,10 +175,7 @@ void correct_position_shake(CellStructure &cs, BoxGeometry const &box_geo,
     apply_positional_correction(particles);
     cs.ghosts_update(Cells::DATA_PART_POSITION | Cells::DATA_PART_MOMENTUM);
   }
-  if (cnt >= SHAKE_MAX_ITERATIONS) {
-    runtimeErrorMsg() << "RATTLE failed to converge after " << cnt
-                      << " iterations";
-  }
+  check_convergence(cnt, "RATTLE");
 
   auto const resort_level =
       cs.check_resort_required() ? Cells::RESORT_LOCAL : Cells::RESORT_NONE;
@@ -245,11 +249,7 @@ void correct_velocity_shake(CellStructure &cs, BoxGeometry const &box_geo,
     apply_velocity_correction(particles);
     cs.ghosts_update(Cells::DATA_PART_MOMENTUM);
   }
-
-  if (cnt >= SHAKE_MAX_ITERATIONS) {
-    runtimeErrorMsg() << "VEL RATTLE failed to converge after " << cnt
-                      << " iterations";
-  }
+  check_convergence(cnt, "VEL RATTLE");
 }
 
 #endif

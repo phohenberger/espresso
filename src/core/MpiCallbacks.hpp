@@ -36,8 +36,6 @@
  */
 
 #include <utils/NumeratedContainer.hpp>
-#include <utils/tuple.hpp>
-#include <utils/type_traits.hpp>
 
 #include <boost/mpi/collectives/broadcast.hpp>
 #include <boost/mpi/communicator.hpp>
@@ -70,10 +68,6 @@ using is_allowed_argument =
                                (!std::is_const_v<std::remove_reference_t<T>> &&
                                 std::is_lvalue_reference_v<T>))>;
 
-template <class... Args>
-using are_allowed_arguments =
-    typename Utils::conjunction<is_allowed_argument<Args>...>::type;
-
 /**
  * @brief Invoke a callable with arguments from an mpi buffer.
  *
@@ -87,14 +81,14 @@ using are_allowed_arguments =
  */
 template <class F, class... Args>
 auto invoke(F f, boost::mpi::packed_iarchive &ia) {
-  static_assert(are_allowed_arguments<Args...>::value,
+  static_assert(std::conjunction_v<is_allowed_argument<Args>...>,
                 "Pointers and non-const references are not allowed as "
                 "arguments for callbacks.");
 
   /* This is the local receive buffer for the parameters. We have to strip
      away const so we can actually deserialize into it. */
   std::tuple<std::remove_const_t<std::remove_reference_t<Args>>...> params;
-  Utils::for_each([&ia](auto &e) { ia >> e; }, params);
+  std::apply([&ia](auto &&...e) { ((ia >> e), ...); }, params);
 
   /* We add const here, so that parameters can only be by value
      or const reference. Output parameters on callbacks are not
@@ -361,8 +355,8 @@ private:
     oa << id;
 
     /* Pack the arguments into a packed mpi buffer. */
-    Utils::for_each([&oa](auto &&e) { oa << e; },
-                    std::forward_as_tuple(std::forward<Args>(args)...));
+    std::apply([&oa](auto &&...e) { ((oa << e), ...); },
+               std::forward_as_tuple(std::forward<Args>(args)...));
 
     boost::mpi::broadcast(m_comm, oa, 0);
   }

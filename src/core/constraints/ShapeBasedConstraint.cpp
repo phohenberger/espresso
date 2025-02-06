@@ -71,15 +71,15 @@ double ShapeBasedConstraint::min_dist(BoxGeometry const &box_geo,
   auto const local_mindist = std::accumulate(
       particles.begin(), particles.end(),
       std::numeric_limits<double>::infinity(),
-      [this, &box_geo](double min, Particle const &p) {
+      [this, &box_geo](double acc, Particle const &p) {
         auto const &ia_params = get_ia_param(p.type());
         if (is_active(ia_params)) {
           double dist;
           Utils::Vector3d vec;
           m_shape->calculate_dist(box_geo.folded_position(p.pos()), dist, vec);
-          return std::min(min, dist);
+          acc = std::min(acc, dist);
         }
-        return min;
+        return acc;
       });
   boost::mpi::reduce(comm_cart, local_mindist, global_mindist,
                      boost::mpi::minimum<double>(), 0);

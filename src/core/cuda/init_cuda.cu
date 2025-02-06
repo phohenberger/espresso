@@ -24,6 +24,7 @@
 #include <cuda_runtime.h>
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 #if defined(OMPI_MPI_H) || defined(_MPI_H)
@@ -98,25 +99,14 @@ int cuda_get_device() {
 }
 
 bool cuda_test_device_access() {
-  int *d = nullptr;
+  auto const deleter = [](int *p) { cudaFree(reinterpret_cast<void *>(p)); };
+  int *ptr = nullptr;
   int h = 42;
-  cudaError_t err;
-
-  err = cudaMalloc((void **)&d, sizeof(int));
-  if (err != cudaSuccess) {
-    throw cuda_runtime_error_cuda(err);
-  }
-  err = cudaMemcpy(d, &h, sizeof(int), cudaMemcpyHostToDevice);
-  if (err != cudaSuccess) {
-    cudaFree(d);
-    throw cuda_runtime_error_cuda(err);
-  }
+  CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&ptr), sizeof(int)));
+  std::unique_ptr<int, decltype(deleter)> d(ptr, deleter);
+  CUDA_CHECK(cudaMemcpy(d.get(), &h, sizeof(int), cudaMemcpyHostToDevice));
   h = 0;
-  err = cudaMemcpy(&h, d, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaFree(d);
-  if (err != cudaSuccess) {
-    throw cuda_runtime_error_cuda(err);
-  }
+  CUDA_CHECK(cudaMemcpy(&h, d.get(), sizeof(int), cudaMemcpyDeviceToHost));
   return h != 42;
 }
 

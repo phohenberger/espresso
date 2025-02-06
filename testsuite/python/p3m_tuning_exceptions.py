@@ -483,6 +483,13 @@ class Test(ut.TestCase):
         self.system.periodicity = self.system.periodicity
         self.system.cell_system.node_grid = self.system.cell_system.node_grid
 
+        # check solver can handle a system without particles
+        self.system.part.clear()
+        self.system.integrator.run(0, recalc_forces=True)
+        self.system.analysis.energy()["coulomb"]
+        self.assertEqual(self.system.analysis.energy()["coulomb"], 0.)
+        self.assertEqual(self.system.analysis.pressure()["coulomb"], 0.)
+
     @utx.skipIfMissingGPU()
     @utx.skipIfMissingFeatures("P3M")
     def test_09_no_errors_p3m_gpu_rescale_mesh(self):
@@ -501,6 +508,25 @@ class Test(ut.TestCase):
         self.system.periodicity = self.system.periodicity
         self.system.cell_system.node_grid = self.system.cell_system.node_grid
 
+        # check GPU data structure reinitialization is safe
+        solver = espressomd.electrostatics.P3MGPU(prefactor=2, accuracy=1e-3,
+                                                  epsilon='metallic',
+                                                  mesh=[-1, -1, -1])
+        self.system.electrostatics.solver = solver
+        self.system.integrator.run(0, recalc_forces=True)
+        ref_forces = np.copy(self.system.part.all().f)
+        solver = espressomd.electrostatics.P3MGPU(**solver.get_params())
+        self.system.electrostatics.solver = solver
+        self.system.integrator.run(0, recalc_forces=True)
+        cur_forces = np.copy(self.system.part.all().f)
+        np.testing.assert_allclose(cur_forces, ref_forces, rtol=1e-5)
+
+        # check solver can handle a system without particles
+        self.system.part.clear()
+        self.system.integrator.run(0, recalc_forces=True)
+        self.assertEqual(self.system.analysis.energy()["coulomb"], 0.)
+        self.assertEqual(self.system.analysis.pressure()["coulomb"], 0.)
+
     @utx.skipIfMissingFeatures("DP3M")
     def test_09_no_errors_dp3m_cpu_rescale_mesh(self):
         self.system.time_step = 0.01
@@ -516,6 +542,11 @@ class Test(ut.TestCase):
         self.system.change_volume_and_rescale_particles(10., "x")
         self.system.periodicity = self.system.periodicity
         self.system.cell_system.node_grid = self.system.cell_system.node_grid
+
+        # check solver can handle a system without particles
+        self.system.part.clear()
+        self.system.integrator.run(0, recalc_forces=True)
+        self.assertEqual(self.system.analysis.energy()["dipolar"], 0.)
 
     def check_tuning_layer_corrections(
             self, container, class_p3m, class_lc, params):

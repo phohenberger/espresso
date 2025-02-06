@@ -106,7 +106,7 @@ protected:
           }
         }
       }
-      get_system().on_non_bonded_ia_change();
+      call_method("internal_global_on_non_bonded_ia_change", {});
       return {};
     }
     if (method == "get_handle") {
@@ -141,6 +141,10 @@ protected:
             m_handle->set_ia_param(i, j, core_ia);
           };
       so->attach(cb_register, m_notify_cutoff_change);
+      return {};
+    }
+    if (method == "internal_global_on_non_bonded_ia_change") {
+      get_system().on_non_bonded_ia_change();
       return {};
     }
 

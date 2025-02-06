@@ -49,6 +49,7 @@
 #include <utils/math/AS_erfc_part.hpp>
 
 #include <cmath>
+#include <cstddef>
 #include <numbers>
 
 /** @brief P3M solver. */
@@ -89,7 +90,7 @@ public:
    * the sum of the squared charges.
    */
   virtual void count_charged_particles() = 0;
-  virtual void count_charged_particles_elc(int, double, double) = 0;
+  virtual void count_charged_particles_elc(std::size_t, double, double) = 0;
   virtual void adapt_epsilon_elc() = 0;
 
   /**
