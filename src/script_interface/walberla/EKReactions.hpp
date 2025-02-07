@@ -38,15 +38,18 @@
 namespace ScriptInterface::walberla {
 
 class EKReactions : public ObjectList<EKReaction> {
+  using Base = ObjectList<EKReaction>;
+  using value_type = typename Base::value_type;
+
   std::shared_ptr<::EK::EKWalberla::ek_reactions_type> m_ek_reactions;
 
-  bool has_in_core(std::shared_ptr<EKReaction> const &obj_ptr) const override {
+  bool has_in_core(value_type const &obj_ptr) const override {
     return m_ek_reactions->contains(obj_ptr->get_instance());
   }
-  void add_in_core(std::shared_ptr<EKReaction> const &obj_ptr) override {
+  void add_in_core(value_type const &obj_ptr) override {
     m_ek_reactions->add(obj_ptr->get_instance());
   }
-  void remove_in_core(std::shared_ptr<EKReaction> const &obj_ptr) override {
+  void remove_in_core(value_type const &obj_ptr) final {
     m_ek_reactions->remove(obj_ptr->get_instance());
   }
 
@@ -57,6 +60,8 @@ protected:
 
 public:
   auto &get_handle() { return m_ek_reactions; }
+
+  ~EKReactions() override { do_destruct(); }
 };
 
 } // namespace ScriptInterface::walberla

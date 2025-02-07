@@ -150,9 +150,15 @@ public:
   auto get_zero_based_type(int bond_id) const {
     return contains(bond_id) ? at(bond_id)->which() : 0;
   }
-  auto get_n_thermalized_bonds() const { return n_thermalized_bonds; }
+  auto get_n_thermalized_bonds() const {
+    assert(n_thermalized_bonds >= 0);
+    return n_thermalized_bonds;
+  }
 #ifdef BOND_CONSTRAINT
-  auto get_n_rigid_bonds() const { return n_rigid_bonds; }
+  auto get_n_rigid_bonds() const {
+    assert(n_rigid_bonds >= 0);
+    return n_rigid_bonds;
+  }
 #endif
   std::optional<key_type> find_bond_id(mapped_type const &bond) const {
     for (auto const &kv : m_params) {

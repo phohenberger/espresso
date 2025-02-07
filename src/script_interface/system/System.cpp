@@ -124,9 +124,22 @@ struct System::Leaves {
   std::shared_ptr<Dipoles::Container> magnetostatics;
 #endif
   std::shared_ptr<Particles::ParticleList> part;
+
+  ~Leaves() {
+    // Clear containers whose elements call MPI callbacks upon destruction.
+    // The containers lifetime is extended by the global context shared object
+    // registry on the head node, which can cause MPI deadlocks if they still
+    // contain elements.
+    if (bonded_interactions) {
+      bonded_interactions->clear();
+    }
+    if (constraints) {
+      constraints->clear();
+    }
+  }
 };
 
-System::System() : m_instance{}, m_leaves{std::make_shared<Leaves>()} {
+System::System() : m_instance{}, m_leaves{std::make_unique<Leaves>()} {
   auto const add_parameter =
       [this, ptr = m_leaves.get()](std::string key, auto(Leaves::*member)) {
         add_parameters({AutoParameter(
@@ -459,6 +472,7 @@ Variant System::do_call_method(std::string const &name,
         ::System::reset_system();
       }
       assert(m_instance.use_count() == 1l);
+      m_leaves.reset();
       m_instance.reset();
     }
     return {};

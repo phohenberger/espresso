@@ -24,7 +24,6 @@
 #include "core/nonbonded_interactions/nonbonded_interaction_data.hpp"
 #include "core/system/System.hpp"
 
-#include "script_interface/ObjectMap.hpp"
 #include "script_interface/ScriptInterface.hpp"
 #include "script_interface/system/Leaf.hpp"
 
@@ -42,24 +41,25 @@ namespace ScriptInterface {
 namespace Interactions {
 
 class NonBondedInteractions : public System::Leaf {
-  using container_type =
-      std::unordered_map<unsigned int,
-                         std::shared_ptr<NonBondedInteractionHandle>>;
-
 public:
-  using key_type = typename container_type::key_type;
-  using mapped_type = typename container_type::mapped_type;
+  using key_type = unsigned int;
+  using mapped_type = std::shared_ptr<NonBondedInteractionHandle>;
 
 private:
+  using container_type = std::unordered_map<key_type, mapped_type>;
   container_type m_nonbonded_ia_params;
   std::shared_ptr<::InteractionsNonBonded> m_handle;
   std::shared_ptr<std::function<void()>> m_notify_cutoff_change;
+
+public:
+  ~NonBondedInteractions() override = default;
 
   void do_construct(VariantMap const &params) override {
     m_handle = std::make_shared<::InteractionsNonBonded>();
     m_notify_cutoff_change = std::make_shared<std::function<void()>>([]() {});
   }
 
+private:
   void on_bind_system(::System::System &system) override {
     auto const max_type = m_handle->get_max_seen_particle_type();
     system.nonbonded_ias = m_handle;
@@ -89,7 +89,7 @@ private:
     }
   }
 
-protected:
+public:
   Variant do_call_method(std::string const &method,
                          VariantMap const &params) override {
     if (method == "reset") {
@@ -151,6 +151,7 @@ protected:
     return {};
   }
 
+private:
   std::string get_internal_state() const override {
     auto const max_type = m_handle->get_max_seen_particle_type();
     std::vector<std::string> object_states;

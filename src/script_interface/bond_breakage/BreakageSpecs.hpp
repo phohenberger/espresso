@@ -34,24 +34,29 @@
 namespace ScriptInterface {
 namespace BondBreakage {
 
-class BreakageSpecs
-    : public ObjectMap<
-          BreakageSpec,
-          AutoParameters<ObjectMap<BreakageSpec, System::Leaf>, System::Leaf>> {
-  using container_type = std::unordered_map<int, std::shared_ptr<BreakageSpec>>;
+using BreakageSpecsBase_t = ObjectMap<
+    BreakageSpec,
+    AutoParameters<ObjectMap<BreakageSpec, System::Leaf>, System::Leaf>>;
+
+class BreakageSpecs : public BreakageSpecsBase_t {
+  using Base = BreakageSpecsBase_t;
 
 public:
-  using key_type = typename container_type::key_type;
-  using mapped_type = typename container_type::mapped_type;
+  using key_type = typename Base::key_type;
+  using mapped_type = typename Base::mapped_type;
 
 private:
   std::shared_ptr<::BondBreakage::BondBreakage> m_bond_breakage;
+
+public:
+  ~BreakageSpecs() override { do_destruct(); }
 
   void do_construct(VariantMap const &params) override {
     m_bond_breakage = std::make_shared<::BondBreakage::BondBreakage>();
     restore_from_checkpoint(params);
   }
 
+private:
   void on_bind_system(::System::System &system) override {
     system.bond_breakage = m_bond_breakage;
   }
@@ -67,7 +72,7 @@ private:
                       mapped_type const &obj_ptr) override {
     m_bond_breakage->breakage_specs.emplace(key, obj_ptr->breakage_spec());
   }
-  void erase_in_core(key_type const &key) override {
+  void erase_in_core(key_type const &key) final {
     m_bond_breakage->breakage_specs.erase(key);
   }
 };
