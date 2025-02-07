@@ -19,6 +19,7 @@
 import unittest as ut
 import unittest_decorators as utx
 import numpy as np
+import scipy.integrate
 
 import espressomd
 import espressomd.accumulators
@@ -123,7 +124,7 @@ class LangevinThermostat(ut.TestCase, thermostats_common.ThermostatsCommon):
 
         # Integrate with trapezoidal rule
         for i in range(3):
-            I = np.trapz(acf[:, p.id, i], tau)
+            I = scipy.integrate.trapezoid(acf[:, p.id, i], tau)
             ratio = I / (kT / gamma[i])
             self.assertAlmostEqual(ratio, 1., delta=0.07)
 

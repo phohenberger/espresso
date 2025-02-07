@@ -426,7 +426,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * outer_cylinder_wall.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -445,7 +444,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
             outer_cylinder_wall.total_normal_force(),
             2 *
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -545,7 +543,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * outer_cylinder_constraint.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -563,8 +560,8 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(outer_cylinder_constraint.total_force()[2], 0.0)
         self.assertAlmostEqual(outer_cylinder_constraint.total_normal_force(),
                                2 * tests_common.lj_force(
-                                   espressomd, cutoff=2.0, offset=0.,
-                                   epsilon=1.0, sigma=1.0, r=dist_part2))
+                                   cutoff=2.0, offset=0., epsilon=1.0,
+                                   sigma=1.0, r=dist_part2))
 
         # Reset
         system.part.clear()
@@ -662,7 +659,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             p.f[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -672,7 +668,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             p.f[2],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.5,
@@ -684,7 +679,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * wall_xz.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -694,7 +688,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * wall_xy.total_force()[2],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.5,
@@ -706,7 +699,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             wall_xy.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.5,
@@ -818,7 +810,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -p.f[2],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -828,7 +819,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             rhomboid_constraint.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -918,7 +908,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             rhomboid_constraint.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -933,7 +922,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             rhomboid_constraint.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -980,7 +968,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             torus_wall.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -996,7 +983,7 @@ class ShapeBasedConstraintTest(ut.TestCase):
 
         self.assertAlmostEqual(torus_wall.total_force()[1], 0.0)
         self.assertAlmostEqual(torus_wall.total_normal_force(), 2 * tests_common.lj_force(
-            espressomd, cutoff=2.0, offset=0., epsilon=1.0, sigma=1.0,
+            cutoff=2.0, offset=0., epsilon=1.0, sigma=1.0,
             r=radius - tube_radius - part_offset))
 
         # Test the geometry of the shape directly

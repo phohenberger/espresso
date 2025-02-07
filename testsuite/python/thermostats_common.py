@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import numpy as np
+import scipy.integrate
 
 import espressomd
 import espressomd.accumulators
@@ -28,7 +29,7 @@ def single_component_maxwell(x1, x2, kT, mass=1.):
     x = np.linspace(x1, x2, 1000)
     maxwell_distr = np.exp(- mass * x**2 / (2. * kT)) * \
         np.sqrt(mass / (2. * np.pi * kT))
-    return np.trapz(maxwell_distr, x=x)
+    return scipy.integrate.trapezoid(maxwell_distr, x=x)
 
 
 class ThermostatsCommon:

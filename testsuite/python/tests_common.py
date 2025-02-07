@@ -318,16 +318,14 @@ def lj_generic_potential(r, epsilon, sigma, cutoff, offset=0., shift=0.,
 
 def lj_generic_force(espressomd, r, epsilon, sigma, cutoff, offset=0., e1=12,
                      e2=6, b1=4., b2=4., delta=0., lam=1., generic=True):
-    f = 1.
-    if r >= offset + cutoff:
-        f = 0.
-    else:
-        has_ljgen_softcore = espressomd.has_features("LJGEN_SOFTCORE")
+    f = 0.
+    if r < offset + cutoff:
         h = (r - offset)**2 + delta * (1. - lam) * sigma**2
         f = (r - offset) * epsilon * lam * (
             b1 * e1 * np.power(sigma / np.sqrt(h), e1) -
             b2 * e2 * np.power(sigma / np.sqrt(h), e2)) / h
-        f *= np.sign(r - offset) if generic and not has_ljgen_softcore else 1
+        if generic and not espressomd.has_features("LJGEN_SOFTCORE"):
+            f *= np.sign(r - offset)
     return f
 
 # Lennard-Jones
@@ -339,9 +337,9 @@ def lj_potential(r, epsilon, sigma, cutoff, shift, offset=0.):
     return V
 
 
-def lj_force(espressomd, r, epsilon, sigma, cutoff, offset=0.):
+def lj_force(r, epsilon, sigma, cutoff, offset=0.):
     f = lj_generic_force(
-        espressomd, r, epsilon, sigma, cutoff, offset=offset, generic=False)
+        None, r, epsilon, sigma, cutoff, offset=offset, generic=False)
     return f
 
 
