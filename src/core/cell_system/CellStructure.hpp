@@ -55,7 +55,7 @@
 #include <any>
 
 // forward declaration to not have to import cabana
-class ListType;
+class CabanaData;
 
 namespace Cells {
 enum Resort : unsigned {
@@ -609,10 +609,16 @@ private:
 
 #ifdef CABANA
 private:
+    std::unique_ptr<CabanaData> m_cabana_data = nullptr;
     std::any stored_verlet_list;
     std::unordered_map<int, int> stored_index_map;
 
 public:
+  void set_cabana_data(std::unique_ptr<CabanaData> data);
+  CabanaData& get_cabana_data();
+
+  virtual ~CellStructure();
+
   template <typename T>
     void store_verlet_list(const T& obj) {
       stored_verlet_list = obj;
