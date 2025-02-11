@@ -167,6 +167,22 @@ public:
    * @return Non-bonded energy of the particle.
    */
   double particle_short_range_energy_contribution(int pid);
+  /**
+   * @brief Compute the energy of a given bond which has to exist on the gien
+   particle.
+   *
+   * Requires that bond partners are visible on the same MPI rank as the primary
+   particle.
+   * Returns {}, if the primary particle is not owned by this MPI rank.
+   *
+   * @param pid    Particle id
+   * @param bond_id    Bond id
+   * @param partners  Particle ids of teh bond partners
+
+   * @return energy of the bond given te primary particle and bond partners
+   */
+  std::optional<double> particle_bond_energy(int pid, int bond_id,
+                                             std::vector<int> partners);
 
   /** Integrate equations of motion
    *  @param n_steps       Number of integration steps, can be zero
