@@ -1418,8 +1418,8 @@ class BondedInteractions(ScriptObjectMap):
             bonded_ia = args[0]
         else:
             raise TypeError("A BondedInteraction object needs to be passed.")
-        bond_id = self._insert_bond(None, bonded_ia)
-        return bond_id
+        bonded_ia._bond_id = self._insert_bond(None, bonded_ia)
+        return bonded_ia._bond_id
 
     def __getitem__(self, bond_id):
         if self.call_method('has_bond', bond_id=bond_id):

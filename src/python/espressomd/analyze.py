@@ -510,6 +510,25 @@ class Analysis(ScriptInterfaceHelper):
         """
         return self.call_method("particle_energy", pid=particle.id)
 
+    def particle_bond_energy(self, particle, bond):
+        """
+        Calculate the bonded energy for the given particle and bond.
+
+        Parameters
+        ----------
+        particle : :class:`~espressomd.particle_data.ParticleHandle`
+        bond : :class:`~espressomd.interactions.BondedInteraction`. The bond has to exist on the given particle
+
+        Returns
+        -------
+        :obj: `float`
+           Energy contribution of the bond
+
+        """
+        interaction, *partners = bond
+        return self.call_method("particle_bond_energy", pid=particle.id,
+                                bond_id=interaction._bond_id, partners=partners)
+
     def dipole_fields(self):
         """
         Calculate the total dipole field on each particle.

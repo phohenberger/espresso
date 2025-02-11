@@ -517,6 +517,7 @@ class ParticleHandle(ScriptInterfaceHelper):
         bonds = []
         for bond_id, *partner_ids in self.call_method("get_bonds_view"):
             bond = self.call_method("get_bond_by_id", bond_id=bond_id)
+            bond._bond_id = bond_id
             bonds.append((bond, *partner_ids))
 
         return tuple(bonds)

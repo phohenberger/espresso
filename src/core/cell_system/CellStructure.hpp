@@ -470,7 +470,6 @@ public:
   /** @brief Average number of integration steps the Verlet list was re-used */
   auto get_verlet_reuse() const { return m_verlet_reuse; }
 
-private:
   /**
    * @brief Resolve ids to particles.
    *
@@ -492,6 +491,7 @@ private:
     return partners;
   }
 
+private:
   /**
    * @brief Execute kernel for every bond on particle.
    * @tparam Handler Callable, which can be invoked with
