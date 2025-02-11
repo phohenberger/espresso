@@ -50,6 +50,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #ifdef CABANA
 #include <Cabana_Core.hpp>
@@ -58,6 +59,7 @@
 #endif
 
 #ifdef CABANA
+
 using data_types = Cabana::MemberTypes<double[3], double[3], int, int, int>;
 using memory_space = Kokkos::SharedSpace;
 using execution_space = Kokkos::DefaultExecutionSpace;
@@ -66,13 +68,16 @@ using ListAlgorithm = Cabana::HalfNeighborTag;
 using ListType = Cabana::CustomVerletList<memory_space, ListAlgorithm, Cabana::VerletLayout2D>;
 
 
-CellStructure::~CellStructure() = default;
+CellStructure::~CellStructure() {
+  m_cabana_data.reset();
+  std::cout << "Destroying CellStructure" << std::endl;
+};
 
-void CellStructure::setCabanaData(std::unique_ptr<CabanaData> data) {
+void CellStructure::set_cabana_data(std::unique_ptr<CabanaData> data) {
   m_cabana_data = std::move(data);
 }
 
-CabanaData& CellStructure::getCabanaData() {
+CabanaData& CellStructure::get_cabana_data() {
   return *m_cabana_data;
 }
 

@@ -26,9 +26,7 @@
 #ifdef CABANA
 
 #include <Cabana_Core.hpp>
-
-
-
+#include "cabana_data.hpp"
 #include "custom_verlet_list.hpp"
 #include <cassert>
 #include <unordered_set>
@@ -111,6 +109,12 @@ void cabana_short_range(BondKernel bond_kernel,
 
     bool const rebuild = cell_structure.get_rebuild_verlet_list();
 
+    CabanaData saved_data;
+
+    if (!rebuild) {
+      saved_data = cell_structure.get_cabana_data();
+    }
+
     if (rebuild) {
       
       for (auto const& p : particles) {
@@ -124,11 +128,8 @@ void cabana_short_range(BondKernel bond_kernel,
           index++;
         }
       }
-        
-      cell_structure.store_index_map(id_to_index);
-
     } else {
-      id_to_index = cell_structure.get_stored_index_map();
+      id_to_index = saved_data.get_id_to_index();
       index = id_to_index.size();
     }
 
@@ -185,10 +186,13 @@ void cabana_short_range(BondKernel bond_kernel,
       };
 
       cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
-      cell_structure.store_verlet_list(verlet_list);
-
     } else {
-      verlet_list = cell_structure.get_stored_verlet_list<ListType>();
+      verlet_list = saved_data.get_verlet_list();
+    }
+
+    if (rebuild) {
+      CabanaData new_data(verlet_list, id_to_index);
+      cell_structure.set_cabana_data(std::make_unique<CabanaData>(new_data));
     }
 
 

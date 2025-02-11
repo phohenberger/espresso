@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <iostream>
+
 #ifdef CABANA
 
 #include <Cabana_Core.hpp>
@@ -40,11 +42,17 @@ class CabanaData {
     std::unordered_map<int, int> id_to_index;
 
 public:
+    CabanaData() = default;
     CabanaData(ListType verlet_list, std::unordered_map<int, int> id_to_index)
       : verlet_list(verlet_list), id_to_index(id_to_index) {}
 
     ListType get_verlet_list() const { return verlet_list; }
     std::unordered_map<int, int> get_id_to_index() const { return id_to_index; }
 
-}
+    ~CabanaData() {
+      std::cout << "Destroying CabanaData" << std::endl;
+    };
+
+
+};
 #endif 

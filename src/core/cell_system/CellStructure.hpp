@@ -609,32 +609,13 @@ private:
 
 #ifdef CABANA
 private:
-    std::unique_ptr<CabanaData> m_cabana_data = nullptr;
-    std::any stored_verlet_list;
-    std::unordered_map<int, int> stored_index_map;
+    std::unique_ptr<CabanaData> m_cabana_data;
 
 public:
   void set_cabana_data(std::unique_ptr<CabanaData> data);
   CabanaData& get_cabana_data();
 
   virtual ~CellStructure();
-
-  template <typename T>
-    void store_verlet_list(const T& obj) {
-      stored_verlet_list = obj;
-    }
-  template <typename T>
-    T get_stored_verlet_list() const {
-      return std::any_cast<T>(stored_verlet_list);
-    }
-
-  void store_index_map(const std::unordered_map<int, int>& obj) {
-    stored_index_map = obj;
-  }
-
-  std::unordered_map<int, int> get_stored_index_map() const {
-    return stored_index_map;
-  }
 
   bool get_rebuild_verlet_list() const { return m_rebuild_verlet_list; }
 
