@@ -83,7 +83,7 @@
 
 template <typename FloatType, Arch Architecture>
 void DipolarP3MImpl<FloatType, Architecture>::count_magnetic_particles() {
-  int local_n = 0;
+  auto local_n = std::size_t{0u};
   double local_mu2 = 0.;
 
   for (auto const &p : get_system().cell_structure->local_particles()) {

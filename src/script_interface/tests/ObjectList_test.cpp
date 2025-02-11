@@ -40,6 +40,8 @@ using namespace ScriptInterface;
 struct ObjectListImpl : ObjectList<ObjectHandle> {
   std::vector<ObjectRef> mock_core;
 
+  ~ObjectListImpl() override { do_destruct(); }
+
 private:
   bool has_in_core(const ObjectRef &obj_ptr) const override {
     return std::ranges::count(mock_core, obj_ptr) >= 1;
@@ -47,7 +49,7 @@ private:
   void add_in_core(const ObjectRef &obj_ptr) override {
     mock_core.push_back(obj_ptr);
   }
-  void remove_in_core(const ObjectRef &obj_ptr) override {
+  void remove_in_core(const ObjectRef &obj_ptr) final {
     std::erase(mock_core, obj_ptr);
   }
 };

@@ -116,7 +116,7 @@ public:
                                            double rate_coefficient,
                                            double stoech_0)
       : indexVectorID(indexVectorID_), rho_0ID(rho_0ID_), order_0_(order_0),
-        rate_coefficient_(rate_coefficient), stoech_0_(stoech_0){};
+        rate_coefficient_(rate_coefficient), stoech_0_(stoech_0) {}
 
   void run(IBlock *block);
 

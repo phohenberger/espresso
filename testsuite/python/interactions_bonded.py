@@ -256,6 +256,8 @@ class InteractionsBondedTest(ut.TestCase):
             p2.pos = p1.pos + self.axis * cutoff * 1.01
             with self.assertRaisesRegex(Exception, r"while calling method integrate\(\)"):
                 self.system.integrator.run(recalc_forces=True, steps=0)
+            with self.assertRaisesRegex(Exception, r"while calling method calculate_energy\(\)"):
+                self.system.analysis.energy()["total"]
         if test_same_pos_exception:
             p2.pos = p1.pos
             with self.assertRaises(Exception):

@@ -549,8 +549,7 @@ void assign_forces(P3MGpuData const &params,
 void p3m_gpu_init(std::shared_ptr<P3MGpuParams> &data, int cao,
                   Utils::Vector3i const &mesh, double alpha,
                   Utils::Vector3d const &box_l, std::size_t n_part) {
-  if (mesh == Utils::Vector3i::broadcast(-1))
-    throw std::runtime_error("P3M: invalid mesh size");
+  assert(mesh != Utils::Vector3i::broadcast(-1));
 
   if (not data) {
     data = std::make_shared<P3MGpuParams>();

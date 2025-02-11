@@ -192,7 +192,7 @@ the normal LJ potential is recovered for :math:`b_1=b_2=4`,
 The optional ``LJGEN_SOFTCORE`` feature activates a softcore version of
 the potential, where the following transformations apply:
 :math:`\epsilon \rightarrow \lambda \epsilon` and
-:math:`r-r_\mathrm{off} \rightarrow \sqrt{(r-r_\mathrm{off})^2 +
+:math:`(r-r_\mathrm{off}) \rightarrow \sqrt{(r-r_\mathrm{off})^2 +
 (1-\lambda) \delta \sigma^2}`. :math:`\lambda` allows to tune the strength of the
 interaction, while :math:`\delta` varies how smoothly the potential goes to zero as
 :math:`\lambda\rightarrow 0`. Such a feature allows one to perform

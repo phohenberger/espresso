@@ -29,18 +29,9 @@
 
 #include <utils/Vector.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <tuple>
-
-namespace detail {
-inline double sanitize_cosine(double cosine) {
-  if (cosine > TINY_COS_VALUE)
-    cosine = TINY_COS_VALUE;
-  if (cosine < -TINY_COS_VALUE)
-    cosine = -TINY_COS_VALUE;
-  return cosine;
-}
-} // namespace detail
 
 /** Compute the cosine of the angle between three particles.
  *
@@ -58,7 +49,7 @@ inline double calc_cosine(Utils::Vector3d const &vec1,
   /* cosine of the angle between vec1 and vec2 */
   auto cos_phi = (vec1 * vec2) / std::sqrt(vec1.norm2() * vec2.norm2());
   if (sanitize_cosine) {
-    cos_phi = detail::sanitize_cosine(cos_phi);
+    cos_phi = std::clamp(cos_phi, -TINY_COS_VALUE, TINY_COS_VALUE);
   }
   return cos_phi;
 }
@@ -84,7 +75,7 @@ angle_generic_force(Utils::Vector3d const &vec1, Utils::Vector3d const &vec2,
   auto const d2 = vec2.norm();
   auto cos_phi = (vec1 * vec2) / (d1 * d2);
   if (sanitize_cosine) {
-    cos_phi = detail::sanitize_cosine(cos_phi);
+    cos_phi = std::clamp(cos_phi, -TINY_COS_VALUE, TINY_COS_VALUE);
   }
   /* force factor */
   auto const fac = forceFactor(cos_phi);

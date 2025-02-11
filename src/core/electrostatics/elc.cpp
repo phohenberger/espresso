@@ -1147,7 +1147,7 @@ template <ChargeProtocol protocol, typename combined_range>
 void modify_p3m_sums(elc_data const &elc, CoulombP3M &solver,
                      combined_range const &p_q_pos_range) {
 
-  auto local_n = 0;
+  auto local_n = std::size_t{0u};
   auto local_q2 = 0.0;
   auto local_q = 0.0;
   for (auto zipped : p_q_pos_range) {
@@ -1180,7 +1180,7 @@ void modify_p3m_sums(elc_data const &elc, CoulombP3M &solver,
     }
   }
 
-  auto global_n = 0;
+  auto global_n = std::size_t{0u};
   auto global_q2 = 0.;
   auto global_q = 0.;
   boost::mpi::all_reduce(comm_cart, local_n, global_n, std::plus<>());

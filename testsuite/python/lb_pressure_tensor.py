@@ -19,10 +19,11 @@
 import unittest as ut
 import unittest_decorators as utx
 import numpy as np
+# import scipy.optimize
+# import scipy.integrate
 
 import espressomd
 import espressomd.lb
-# import scipy.optimize
 
 N_CELLS = 12
 
@@ -195,7 +196,7 @@ class TestLBPressureTensorGPU(TestLBPressureTensor, ut.TestCase):
                 # integrate first part numerically, fit exponential to tail
                 t_max_fit = 50 * tau
                 ts = np.arange(0, t_max_fit, 2 * tau)
-                numeric_integral = np.trapz(acf[:len(ts)], dx=2 * self.params["tau"])
+                numeric_integral = scipy.integrate.trapezoid(acf[:len(ts)], dx=2 * self.params["tau"])
 
                 # fit tail
                 def fit(x, a, b): return a * np.exp(-b * x)

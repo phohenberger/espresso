@@ -67,10 +67,6 @@ checkpoint = espressomd.checkpointing.Checkpoint(
     **config.get_checkpoint_params())
 path_cpt_root = pathlib.Path(checkpoint.checkpoint_dir)
 
-# cleanup old checkpoint files
-for filepath in path_cpt_root.iterdir():
-    filepath.unlink(missing_ok=True)
-
 # Lees-Edwards boundary conditions
 if 'INT.NPT' not in modes and 'LB.GPU' not in modes and (
         'LB' not in modes or n_nodes in (1, 2, 3)):

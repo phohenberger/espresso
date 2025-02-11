@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UTILS_MATRIX_VECTOR_PRODUCT_HPP
-#define UTILS_MATRIX_VECTOR_PRODUCT_HPP
+
+#pragma once
 
 #include "utils/get.hpp"
 
@@ -107,5 +107,3 @@ constexpr std::array<T, N> matrix_vector_product(const Container &vec) {
 }
 
 } // namespace Utils
-
-#endif

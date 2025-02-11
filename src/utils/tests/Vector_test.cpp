@@ -26,6 +26,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <utils/Vector.hpp>
+#include <utils/get.hpp>
 
 #include <boost/range/numeric.hpp>
 
@@ -44,8 +45,7 @@
 using Utils::Vector;
 
 /* Number of nontrivial Baxter permutations of length 2n-1. (A001185) */
-#define TEST_NUMBERS                                                           \
-  { 0, 1, 1, 7, 21, 112, 456, 2603, 13203 }
+#define TEST_NUMBERS {0, 1, 1, 7, 21, 112, 456, 2603, 13203}
 
 constexpr int test_numbers[] = TEST_NUMBERS;
 constexpr std::size_t n_test_numbers = sizeof(test_numbers) / sizeof(int);
@@ -338,6 +338,16 @@ BOOST_AUTO_TEST_CASE(conversion) {
     BOOST_TEST(view.data() == orig.data());
     BOOST_TEST(view.size() == orig.size());
   }
+}
+
+BOOST_AUTO_TEST_CASE(tuple_protocol) {
+  using A = Utils::Vector<int, 4>;
+
+  static_assert(std::is_same_v<std::tuple_element_t<0, A>, int>);
+  static_assert(std::is_same_v<std::tuple_element_t<1, A>, int>);
+  static_assert(A{}.size() == std::tuple_size<A>::value);
+
+  BOOST_CHECK_EQUAL(Utils::get<1>(A{{1, 2, 3, 4}}), 2);
 }
 
 BOOST_AUTO_TEST_CASE(vector_product_test) {

@@ -45,6 +45,7 @@ class ThermalizedBond(ut.TestCase, thermostats_common.ThermostatsCommon):
 
     def tearDown(self):
         self.system.part.clear()
+        self.system.bonded_inter.clear()
         self.system.thermostat.turn_off()
 
     def test_com_langevin(self):
@@ -149,11 +150,18 @@ class ThermalizedBond(ut.TestCase, thermostats_common.ThermostatsCommon):
             v_stored, v_minmax, bins, error_tol, t_dist)
 
     def test_exceptions(self):
-        espressomd.interactions.ThermalizedBond(
+        bond = espressomd.interactions.ThermalizedBond(
             temp_com=1., gamma_com=1., temp_distance=1., gamma_distance=1.,
             r_cut=3.)
+        self.system.bonded_inter.add(bond)
         with self.assertRaisesRegex(Exception, "Thermalized bonds require the thermalized_bond thermostat"):
             self.system.integrator.run(0)
+        self.system.thermostat.set_thermalized_bond(seed=51)
+        p1 = self.system.part.add(pos=[0., 0., 0.])
+        p2 = self.system.part.add(pos=[0., 0., bond.r_cut * 1.01])
+        p1.bonds = ((bond, p2),)
+        with self.assertRaisesRegex(Exception, r"while calling method integrate\(\)"):
+            self.system.integrator.run(steps=0, recalc_forces=True)
 
 
 if __name__ == "__main__":

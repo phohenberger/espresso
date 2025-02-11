@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2022 The ESPResSo project
+ * Copyright (C) 2010-2025 The ESPResSo project
  *
  * This file is part of ESPResSo.
  *
@@ -16,24 +16,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UTILS_GET_HPP
-#define UTILS_GET_HPP
+
+#pragma once
 
 #include <cstddef>
-#include <tuple>
+#include <utility>
 
 namespace Utils {
 template <std::size_t I, typename T>
-const std::tuple_element_t<I, T> &get(const T &v) {
+std::tuple_element_t<I, T> const &get(T const &v) noexcept {
   return std::get<I>(v);
 }
-
-template <class T> struct tuple_size : std::tuple_size<T> {};
-
-template <std::size_t I, class Tuple>
-struct tuple_element : std::tuple_element<I, Tuple> {};
-
-template <std::size_t I, class Tuple>
-using tuple_element_t = typename tuple_element<I, Tuple>::type;
+template <std::size_t I, typename T>
+std::tuple_element_t<I, T> &get(T &v) noexcept {
+  return std::get<I>(v);
+}
 } // namespace Utils
-#endif

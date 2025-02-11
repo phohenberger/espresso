@@ -385,7 +385,8 @@ class EKTest:
 
     def test_raise_if_read_only(self):
         ek_species = self.make_default_ek_species()
-        for key in {"lattice", "shape", "single_precision", "seed", "thermalized"}:
+        for key in {"lattice", "shape",
+                    "single_precision", "seed", "thermalized"}:
             with self.assertRaisesRegex(RuntimeError, f"(Parameter|Property) '{key}' is read-only"):
                 setattr(ek_species, key, 0)
 

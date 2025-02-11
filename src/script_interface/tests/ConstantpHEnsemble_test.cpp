@@ -93,7 +93,7 @@ BOOST_FIXTURE_TEST_CASE(ConstantpHEnsemble_test, ParticleFactory) {
     params["constant_pH"] = pH;
     params["exclusion_range"] = exclusion_range;
     params["exclusion_radius_per_type"] = make_unordered_map_of_variants(radii);
-    auto &&sp = ctx->make_shared_local("Testing::ConstantpHEnsemble", params);
+    auto &&sp = ctx->make_shared("Testing::ConstantpHEnsemble", params);
     return std::dynamic_pointer_cast<Testing::ConstantpHEnsemble>(sp);
   };
 

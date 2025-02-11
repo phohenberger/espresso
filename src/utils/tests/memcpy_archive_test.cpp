@@ -24,7 +24,6 @@
 #include <utils/Vector.hpp>
 #include <utils/serialization/memcpy_archive.hpp>
 #include <utils/serialization/optional.hpp>
-#include <utils/type_traits.hpp>
 
 #include <array>
 #include <cstddef>

@@ -43,6 +43,8 @@ namespace utf = boost::unit_test;
 #include "electrostatics/coulomb.hpp"
 #include "electrostatics/p3m.hpp"
 #include "electrostatics/p3m.impl.hpp"
+#include "energy_inline.hpp"
+#include "forces_inline.hpp"
 #include "galilei/Galilei.hpp"
 #include "integrate.hpp"
 #include "integrators/Propagation.hpp"
@@ -584,6 +586,38 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
     } else {
       get_particle_node_parallel(12345);
     }
+    std::vector<Particle> plist(5u);
+    std::vector<Particle *> plist_ptr{};
+    for (auto &p : plist) {
+      plist_ptr.emplace_back(&p);
+    }
+    auto const energy_kernel = [&](std::size_t n) {
+      auto const &box_geo = *system.box_geo;
+      auto const none = NoneBond{};
+      auto const beg = std::begin(plist_ptr);
+      calc_bonded_energy(none, plist[0], {beg, n}, box_geo, nullptr);
+    };
+    auto const force_kernel = [&](std::size_t n) {
+      auto const &box_geo = *system.box_geo;
+      auto const &pl = plist; // alias to improve code coverage
+      auto const none = NoneBond{};
+      if (n == 1u) {
+        calc_bond_pair_force(none, pl[0], pl[1], {}, nullptr);
+      } else if (n == 2u) {
+        calc_bonded_three_body_force(none, box_geo, pl[0], pl[1], pl[2]);
+      } else if (n == 3u) {
+        calc_bonded_four_body_force(none, box_geo, pl[0], pl[1], pl[2], pl[3]);
+      }
+    };
+    static_cast<void>(energy_kernel(0u));
+    BOOST_CHECK_THROW(energy_kernel(1u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(energy_kernel(2u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(energy_kernel(3u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(energy_kernel(4u), BondInvalidSizeError);
+    static_cast<void>(force_kernel(0u));
+    BOOST_CHECK_THROW(force_kernel(1u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(force_kernel(2u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(force_kernel(3u), BondUnknownTypeError);
 #ifdef CUDA
     BOOST_CHECK_THROW(
         invoke_skip_cuda_exceptions([]() { throw std::runtime_error(""); }),

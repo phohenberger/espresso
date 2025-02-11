@@ -97,7 +97,7 @@
 
 template <typename FloatType, Arch Architecture>
 void CoulombP3MImpl<FloatType, Architecture>::count_charged_particles() {
-  auto local_n = 0;
+  auto local_n = std::size_t{0u};
   auto local_q2 = 0.0;
   auto local_q = 0.0;
 
@@ -463,6 +463,9 @@ double CoulombP3MImpl<FloatType, Architecture>::long_range_kernel(
 #else
   auto constexpr npt_flag = false;
 #endif
+  if (p3m.sum_qpart == 0u) {
+    return 0.;
+  }
 
   if (p3m.sum_q2 > 0.) {
     if (not has_actor_of_type<ElectrostaticLayerCorrection>(

@@ -274,15 +274,15 @@ inline void add_non_bonded_pair_force(
 
 /** Compute the bonded interaction force between particle pairs.
  *
+ *  @param[in] iaparams    Bonded parameters for the interaction.
  *  @param[in] p1          First particle.
  *  @param[in] p2          Second particle.
- *  @param[in] iaparams    Bonded parameters for the interaction.
  *  @param[in] dx          Vector between @p p1 and @p p2.
  *  @param[in] kernel      Coulomb force kernel.
  */
 inline std::optional<Utils::Vector3d> calc_bond_pair_force(
-    Particle const &p1, Particle const &p2,
-    Bonded_IA_Parameters const &iaparams, Utils::Vector3d const &dx,
+    Bonded_IA_Parameters const &iaparams, Particle const &p1,
+    Particle const &p2, Utils::Vector3d const &dx,
     Coulomb::ShortRangeForceKernel::kernel_type const *kernel) {
   if (auto const *iap = boost::get<FeneBond>(&iaparams)) {
     return iap->force(dx);
@@ -334,7 +334,7 @@ inline bool add_bonded_two_body_force(
       return false;
     }
   } else {
-    auto result = calc_bond_pair_force(p1, p2, iaparams, dx, kernel);
+    auto result = calc_bond_pair_force(iaparams, p1, p2, dx, kernel);
     if (result) {
       p1.force() += result.value();
       p2.force() -= result.value();
