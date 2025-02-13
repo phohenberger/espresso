@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(test_interpolation_pdf) {
 
   std::vector<double> source_pop(19);
   auto x = -1.;
-  std::for_each(source_pop.begin(), source_pop.end(), [&x](auto &v) {
+  std::ranges::for_each(source_pop, [&x](auto &v) {
     v = x;
     x += .1;
   });

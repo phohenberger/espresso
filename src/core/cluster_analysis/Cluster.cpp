@@ -127,11 +127,11 @@ std::vector<std::size_t> sort_indices(const std::vector<T> &v) {
 
   // Unsorted for unsorted vector (0..n-1)
   std::vector<std::size_t> idx(v.size());
-  std::iota(idx.begin(), idx.end(), 0);
+  std::iota(idx.begin(), idx.end(), std::size_t{0u});
 
   // sort indices based on comparing values in v
-  std::sort(idx.begin(), idx.end(),
-            [&v](std::size_t i1, std::size_t i2) { return v[i1] < v[i2]; });
+  std::ranges::sort(
+      idx, [&v](std::size_t i1, std::size_t i2) { return v[i1] < v[i2]; });
   return idx;
 }
 

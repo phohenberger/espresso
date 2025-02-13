@@ -24,7 +24,6 @@ include(espresso_unit_test)
 espresso_unit_test(SRC Vector_test.cpp DEPENDS espresso::utils)
 espresso_unit_test(SRC Factory_test.cpp DEPENDS espresso::utils)
 espresso_unit_test(SRC NumeratedContainer_test.cpp DEPENDS espresso::utils)
-espresso_unit_test(SRC keys_test.cpp DEPENDS espresso::utils)
 espresso_unit_test(SRC Cache_test.cpp DEPENDS espresso::utils)
 espresso_unit_test(SRC histogram_test.cpp DEPENDS espresso::utils)
 espresso_unit_test(SRC accumulator_test.cpp DEPENDS espresso::utils

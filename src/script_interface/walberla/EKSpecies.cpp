@@ -50,8 +50,7 @@ Variant EKSpecies::do_call_method(std::string const &method,
                                   VariantMap const &parameters) {
   if (method == "update_flux_boundary_from_shape") {
     auto values = get_value<std::vector<double>>(parameters, "values");
-    std::transform(values.begin(), values.end(), values.begin(),
-                   [this](double v) { return v * m_conv_flux; });
+    std::ranges::for_each(values, [this](double &v) { v *= m_conv_flux; });
 
     m_instance->update_flux_boundary_from_shape(
         get_value<std::vector<int>>(parameters, "raster"), values);
@@ -59,8 +58,7 @@ Variant EKSpecies::do_call_method(std::string const &method,
   }
   if (method == "update_density_boundary_from_shape") {
     auto values = get_value<std::vector<double>>(parameters, "values");
-    std::transform(values.begin(), values.end(), values.begin(),
-                   [this](double v) { return v * m_conv_density; });
+    std::ranges::for_each(values, [this](double &v) { v *= m_conv_density; });
     m_instance->update_density_boundary_from_shape(
         get_value<std::vector<int>>(parameters, "raster"), values);
     return {};

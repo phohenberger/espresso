@@ -216,11 +216,10 @@ Variant CellSystem::do_call_method(std::string const &name,
         pair_list = get_pairs_of_types(system, distance, types);
       }
       Utils::Mpi::gather_buffer(pair_list, context()->get_comm());
-      std::transform(pair_list.begin(), pair_list.end(),
-                     std::back_inserter(out),
-                     [](std::pair<int, int> const &pair) {
-                       return std::vector<int>{pair.first, pair.second};
-                     });
+      std::ranges::transform(pair_list, std::back_inserter(out),
+                             [](auto const &pair) {
+                               return std::vector<int>{pair.first, pair.second};
+                             });
     });
     return out;
   }
@@ -255,12 +254,11 @@ Variant CellSystem::do_call_method(std::string const &name,
     auto pair_list =
         non_bonded_loop_trace(system, context()->get_comm().rank());
     Utils::Mpi::gather_buffer(pair_list, context()->get_comm());
-    std::transform(pair_list.begin(), pair_list.end(), std::back_inserter(out),
-                   [](PairInfo const &pair) {
-                     return std::vector<Variant>{pair.id1,   pair.id2,
-                                                 pair.pos1,  pair.pos2,
-                                                 pair.vec21, pair.node};
-                   });
+    std::ranges::transform(
+        pair_list, std::back_inserter(out), [](auto const &pair) {
+          return std::vector<Variant>{pair.id1,  pair.id2,   pair.pos1,
+                                      pair.pos2, pair.vec21, pair.node};
+        });
     return out;
   }
   if (name == "tune_skin") {

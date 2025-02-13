@@ -197,7 +197,7 @@ template <std::size_t Length, class InputIt>
 auto sorted_view(InputIt const &buffer_it) {
   std::array<Testing::Serial_T, Length> subset;
   std::copy_n(buffer_it, Length, subset.begin());
-  std::sort(subset.begin(), subset.end(), std::greater<>());
+  std::ranges::sort(subset, std::greater<>());
   return subset;
 }
 

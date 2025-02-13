@@ -70,9 +70,8 @@ protected:
   virtual std::set<std::string> get_valid_parameters() const {
     auto const vec = valid_parameters();
     auto valid_keys = std::set<std::string>();
-    std::transform(vec.begin(), vec.end(),
-                   std::inserter(valid_keys, valid_keys.begin()),
-                   [](auto const &key) { return std::string{key}; });
+    std::ranges::transform(vec, std::inserter(valid_keys, valid_keys.begin()),
+                           [](auto const &key) { return std::string{key}; });
     return valid_keys;
   }
 

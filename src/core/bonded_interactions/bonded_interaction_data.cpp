@@ -48,7 +48,7 @@ double BondedInteractionsMap::maximal_cutoff() const {
       });
 
   /* Check if there are dihedrals */
-  auto const any_dihedrals = std::any_of(begin(), end(), [](auto const &kv) {
+  auto const any_dihedrals = std::ranges::any_of(*this, [](auto const &kv) {
     return (boost::get<DihedralBond>(&(*kv.second)) ||
             boost::get<TabulatedDihedralBond>(&(*kv.second)));
   });

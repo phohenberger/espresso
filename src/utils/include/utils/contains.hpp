@@ -34,9 +34,8 @@ namespace Utils {
  * @return True iff range contains the value.
  */
 template <class Range, class T> bool contains(Range &&rng, T const &value) {
-  using std::begin;
   using std::end;
 
-  return std::find(begin(rng), end(rng), value) != end(rng);
+  return std::ranges::find(rng, value) != end(rng);
 }
 } // namespace Utils

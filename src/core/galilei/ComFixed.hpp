@@ -23,12 +23,13 @@
 #include "communication.hpp"
 
 #include <utils/Vector.hpp>
-#include <utils/keys.hpp>
 
 #include <boost/mpi/collectives/all_reduce.hpp>
 #include <boost/mpi/communicator.hpp>
 
+#include <algorithm>
 #include <functional>
+#include <ranges>
 #include <unordered_map>
 #include <vector>
 
@@ -77,7 +78,11 @@ public:
     }
   }
 
-  std::vector<int> get_fixed_types() const { return Utils::keys(m_type_index); }
+  std::vector<int> get_fixed_types() const {
+    std::vector<int> res{};
+    std::ranges::copy(std::views::keys(m_type_index), std::back_inserter(res));
+    return res;
+  }
 
   void apply(ParticleRange const &particles) const {
     /* Bail out early if there is nothing to do. */

@@ -242,8 +242,8 @@ template <typename FT, lbmpy::Arch Architecture> struct Fixture {
       auto const old_laf = lbm::accessor::Vector::get(force_field, it);
       auto const old_rho = lbm::accessor::Density::get(pdf_field, it);
       auto ref_pop = old_pop;
-      std::transform(old_pop.begin(), old_pop.end(), ref_pop.begin(),
-                     [](auto const &f) { return FT{2} * f; });
+      std::ranges::transform(old_pop, ref_pop.begin(),
+                             [](auto const &f) { return FT{2} * f; });
       lbm::accessor::Population::set(pdf_field, ref_pop, it);
       auto const new_pop = lbm::accessor::Population::get(pdf_field, it);
       auto const new_pre = lbm::accessor::PressureTensor::get(pdf_field, it);

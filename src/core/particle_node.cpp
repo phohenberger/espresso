@@ -31,7 +31,6 @@
 
 #include <utils/Cache.hpp>
 #include <utils/Vector.hpp>
-#include <utils/keys.hpp>
 #include <utils/mpi/gatherv.hpp>
 
 #include <boost/mpi/collectives/all_gather.hpp>
@@ -44,6 +43,7 @@
 #include <cmath>
 #include <functional>
 #include <iterator>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -264,7 +264,7 @@ void prefetch_particle_data(std::span<const int> in_ids) {
   auto out_ids = std::back_inserter(ids);
 
   /* Don't prefetch particles already on the head node or already cached. */
-  std::copy_if(in_ids.begin(), in_ids.end(), out_ids, [](int id) {
+  std::ranges::copy_if(in_ids, out_ids, [](int id) {
     return (get_particle_node(id) != this_node) && particle_fetch_cache.has(id);
   });
 
@@ -574,17 +574,19 @@ std::vector<int> get_particle_ids() {
   if (particle_node.empty())
     build_particle_node();
 
-  auto ids = Utils::keys(particle_node);
-  std::ranges::sort(ids);
+  std::vector<int> pids{};
+  std::ranges::copy(std::views::keys(particle_node), std::back_inserter(pids));
+  std::ranges::sort(pids);
 
-  return ids;
+  return pids;
 }
 
 std::vector<int> get_particle_ids_parallel() {
   if (rebuild_needed()) {
     build_particle_node_parallel();
   }
-  auto pids = Utils::keys(particle_node);
+  std::vector<int> pids{};
+  std::ranges::copy(std::views::keys(particle_node), std::back_inserter(pids));
   boost::mpi::broadcast(::comm_cart, pids, 0);
   return pids;
 }

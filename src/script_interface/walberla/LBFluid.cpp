@@ -208,7 +208,7 @@ std::vector<Variant> LBFluid::get_average_pressure_tensor() const {
   auto const local = m_instance->get_pressure_tensor() / m_conv_press;
   auto const tensor_flat = mpi_reduce_sum(context()->get_comm(), local);
   auto tensor = Utils::Matrix<double, 3, 3>{};
-  std::copy(tensor_flat.begin(), tensor_flat.end(), tensor.m_data.begin());
+  std::ranges::copy(tensor_flat, tensor.m_data.begin());
   return std::vector<Variant>{tensor.row<0>().as_vector(),
                               tensor.row<1>().as_vector(),
                               tensor.row<2>().as_vector()};

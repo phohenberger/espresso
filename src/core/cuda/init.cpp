@@ -28,6 +28,7 @@
 
 #include <mpi.h>
 
+#include <algorithm>
 #include <cstring>
 #include <iterator>
 #include <set>
@@ -83,8 +84,8 @@ std::vector<EspressoGpuDevice> cuda_gather_gpus() {
     MPI_Gather(&n_gpus, 1, MPI_INT, n_gpu_array, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     /* insert local devices */
-    std::copy(devices_local.begin(), devices_local.end(),
-              std::inserter(device_set, device_set.begin()));
+    std::ranges::copy(devices_local,
+                      std::inserter(device_set, device_set.begin()));
 
     EspressoGpuDevice device;
     MPI_Status s;
@@ -97,8 +98,7 @@ std::vector<EspressoGpuDevice> cuda_gather_gpus() {
       }
     }
     /* Copy unique devices to result, if any */
-    std::copy(device_set.begin(), device_set.end(),
-              std::inserter(devices_global, devices_global.begin()));
+    std::ranges::copy(device_set, std::back_inserter(devices_global));
     delete[] n_gpu_array;
   } else {
     /* Send number of devices to head node */
