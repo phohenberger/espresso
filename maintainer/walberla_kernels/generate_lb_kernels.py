@@ -86,7 +86,6 @@ else:
 # global parameters
 stencil = lbmpy.stencils.LBStencil(lbmpy.enums.Stencil.D3Q19)
 kT = sp.symbols("kT")
-streaming_pattern = "push"
 
 
 def paramlist(parameters, keys):
@@ -254,7 +253,7 @@ def generate_packinfo_kernels(ctx, data_type, fields):
 
 def generate_boundary_kernels(ctx, method, data_type):
     precision_prefix = pystencils_espresso.precision_prefix[ctx.double_accuracy]
-    ubb_dynamic = lbmpy_espresso.UBB(
+    ubb_dynamic = lbmpy.boundaries.UBB(
         lambda *args: None, dim=3, data_type=data_type)
     ubb_data_handler = lbmpy_espresso.BounceBackSlipVelocityUBB(
         method.stencil, ubb_dynamic)
@@ -281,7 +280,7 @@ def generate_boundary_kernels(ctx, method, data_type):
         lbmpy_walberla.generate_boundary(
             ctx, class_name, ubb_dynamic, method,
             additional_data_handler=ubb_data_handler,
-            streaming_pattern=streaming_pattern, target=target)
+            streaming_pattern="pull", target=target)
         ctx.patch_file(class_name, get_ext_header(target_suffix),
                        patch_boundary_header, target_suffix)
         ctx.patch_file(class_name, get_ext_source(target_suffix),
