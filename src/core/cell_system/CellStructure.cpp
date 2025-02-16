@@ -69,8 +69,9 @@ using ListType = Cabana::CustomVerletList<memory_space, ListAlgorithm, Cabana::V
 
 
 CellStructure::~CellStructure() {
-  m_cabana_data.reset();
+  
   std::cout << "Destroying CellStructure" << std::endl;
+  m_cabana_data.reset();
 };
 
 void CellStructure::set_cabana_data(std::unique_ptr<CabanaData> data) {
