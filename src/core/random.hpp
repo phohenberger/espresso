@@ -35,6 +35,7 @@
 #include <cstddef>
 #include <numbers>
 #include <random>
+#include <ranges>
 #include <vector>
 
 /*
@@ -113,8 +114,8 @@ auto noise_uniform(uint64_t counter, uint32_t seed, int key1, int key2 = 0) {
 
   auto const integers = philox_4_uint64s<salt>(counter, seed, key1, key2);
   Utils::VectorXd<N> noise{};
-  std::transform(integers.begin(), integers.begin() + N, noise.begin(),
-                 [](std::size_t value) { return Utils::uniform(value) - 0.5; });
+  std::ranges::transform(integers | std::ranges::views::take(N), noise.begin(),
+                         [](std::size_t v) { return Utils::uniform(v) - 0.5; });
   return noise;
 }
 
@@ -154,11 +155,11 @@ auto noise_gaussian(uint64_t counter, uint32_t seed, int key1, int key2 = 0) {
 
   constexpr std::size_t M = (N <= 2) ? 2 : 4;
   Utils::VectorXd<M> u{};
-  std::transform(integers.begin(), integers.begin() + M, u.begin(),
-                 [](std::size_t value) {
-                   auto u = Utils::uniform(value);
-                   return (u < epsilon) ? epsilon : u;
-                 });
+  std::ranges::transform(integers | std::ranges::views::take(M), u.begin(),
+                         [](std::size_t value) {
+                           auto u = Utils::uniform(value);
+                           return (u < epsilon) ? epsilon : u;
+                         });
 
   // Box-Muller transform code adapted from
   // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform

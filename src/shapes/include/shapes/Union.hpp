@@ -76,9 +76,8 @@ public:
   }
 
   bool is_inside(Utils::Vector3d const &pos) const override {
-    return std::any_of(
-        m_shapes.begin(), m_shapes.end(),
-        [&pos](auto const &shape) { return shape->is_inside(pos); });
+    return std::ranges::any_of(
+        m_shapes, [&pos](auto const &shape) { return shape->is_inside(pos); });
   }
 
 private:

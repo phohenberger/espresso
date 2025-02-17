@@ -351,9 +351,9 @@ private:
 
     auto const blocks = lattice.get_blocks();
 
-    for (auto b = blocks->begin(); b != blocks->end(); ++b) {
-      kernel.configure(blocks, &*b);
-      kernel_electrostatic.configure(blocks, &*b);
+    for (auto &block : *blocks) {
+      kernel.configure(blocks, &block);
+      kernel_electrostatic.configure(blocks, &block);
     }
 
     m_diffusive_flux = std::make_unique<DiffusiveFluxKernel>(std::move(kernel));

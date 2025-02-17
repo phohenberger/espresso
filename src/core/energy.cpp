@@ -140,11 +140,9 @@ std::optional<double> System::particle_bond_energy(int pid, int bond_id,
   if (cell_structure->get_resort_particles()) {
     cell_structure->update_ghosts_and_resort_particle(get_global_ghost_flags());
   }
-  const Particle *p = cell_structure->get_local_particle(pid);
-  if (not p)
-    return {}; // not available on this MPI rank
-  if (p->is_ghost())
-    return {};
+  Particle const *p = cell_structure->get_local_particle(pid);
+  if (not p or p->is_ghost())
+    return {}; // not available on this MPI rank or ghost
   auto const &iaparams = *bonded_ias->at(bond_id);
   try {
     auto resolved_partners = cell_structure->resolve_bond_partners(partners);

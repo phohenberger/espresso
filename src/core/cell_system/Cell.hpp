@@ -58,10 +58,9 @@ public:
   Neighbors(std::span<const CellRef> red_neighbors,
             std::span<const CellRef> black_neighbors) {
     m_neighbors.resize(red_neighbors.size() + black_neighbors.size());
-    m_red_black_divider = std::copy(red_neighbors.begin(), red_neighbors.end(),
-                                    m_neighbors.begin());
-    std::copy(black_neighbors.begin(), black_neighbors.end(),
-              m_red_black_divider);
+    auto const res = std::ranges::copy(red_neighbors, m_neighbors.begin());
+    m_red_black_divider = res.out;
+    std::ranges::copy(black_neighbors, m_red_black_divider);
   }
 
   /**

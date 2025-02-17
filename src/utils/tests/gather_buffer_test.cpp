@@ -47,11 +47,11 @@ void check_vector(const boost::mpi::communicator &comm, int root) {
     BOOST_CHECK_EQUAL(static_cast<int>(buf.size()), total_size);
 
     /* Check order in result */
-    BOOST_CHECK(std::is_sorted(buf.begin(), buf.end()));
+    BOOST_CHECK(std::ranges::is_sorted(buf));
 
     /* Check values */
     for (int i = 1; i <= n; i++) {
-      auto const [lower, upper] = std::equal_range(buf.begin(), buf.end(), i);
+      auto const [lower, upper] = std::ranges::equal_range(buf, i);
 
       BOOST_CHECK(i == std::distance(lower, upper));
     }
@@ -95,7 +95,7 @@ void check_vector_empty(const boost::mpi::communicator &comm, int empty) {
     BOOST_CHECK_EQUAL(static_cast<int>(buf.size()), (comm.size() - 1) * 11);
 
     for (int i = 0; i < comm.size(); i++) {
-      auto const [lower, upper] = std::equal_range(buf.begin(), buf.end(), i);
+      auto const [lower, upper] = std::ranges::equal_range(buf, i);
 
       if (i == empty) {
         BOOST_CHECK(0 == std::distance(lower, upper));

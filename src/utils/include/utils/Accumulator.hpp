@@ -71,20 +71,20 @@ inline void Accumulator::operator()(const std::vector<double> &data) {
         "The given data size does not fit the initialized size!");
   ++m_n;
   if (m_n == 1u) {
-    std::transform(
-        data.begin(), data.end(), m_acc_data.begin(),
+    std::ranges::transform(
+        data, m_acc_data.begin(),
         [](double d) -> AccumulatorData<double> { return {d, 0.0}; });
   } else {
-    std::transform(m_acc_data.begin(), m_acc_data.end(), data.begin(),
-                   m_acc_data.begin(),
-                   [this](AccumulatorData<double> &a,
-                          double d) -> AccumulatorData<double> {
-                     auto const old_mean = a.mean;
-                     auto const new_mean =
-                         old_mean + (d - old_mean) / static_cast<double>(m_n);
-                     auto const new_m = a.m + (d - old_mean) * (d - new_mean);
-                     return {new_mean, new_m};
-                   });
+    auto const denominator = static_cast<double>(m_n);
+    std::ranges::transform(m_acc_data, data, m_acc_data.begin(),
+                           [denominator](auto const &a, double d) {
+                             auto const old_mean = a.mean;
+                             auto const new_mean =
+                                 old_mean + (d - old_mean) / denominator;
+                             auto const new_m =
+                                 a.m + (d - old_mean) * (d - new_mean);
+                             return AccumulatorData<double>{new_mean, new_m};
+                           });
   }
 }
 
@@ -92,10 +92,9 @@ inline void Accumulator::operator()(const std::vector<double> &data) {
  * @brief Compute the sample mean.
  */
 inline std::vector<double> Accumulator::mean() const {
-  std::vector<double> res;
-  std::transform(
-      m_acc_data.begin(), m_acc_data.end(), std::back_inserter(res),
-      [](const AccumulatorData<double> &acc_data) { return acc_data.mean; });
+  std::vector<double> res{};
+  std::ranges::transform(m_acc_data, std::back_inserter(res),
+                         [](auto const &acc_data) { return acc_data.mean; });
   return res;
 }
 
@@ -104,16 +103,16 @@ inline std::vector<double> Accumulator::mean() const {
  * assuming uncorrelated data.
  */
 inline std::vector<double> Accumulator::variance() const {
-  std::vector<double> res;
+  std::vector<double> res{};
   if (m_n == 1u) {
     res = std::vector<double>(m_acc_data.size(),
                               std::numeric_limits<double>::max());
   } else {
-    std::transform(m_acc_data.begin(), m_acc_data.end(),
-                   std::back_inserter(res),
-                   [this](const AccumulatorData<double> &acc_data) {
-                     return acc_data.m / (static_cast<double>(m_n) - 1.);
-                   });
+    auto const denominator = static_cast<double>(m_n) - 1.;
+    std::ranges::transform(m_acc_data, std::back_inserter(res),
+                           [denominator](auto const &acc_data) {
+                             return acc_data.m / denominator;
+                           });
   }
   return res;
 }
@@ -123,9 +122,10 @@ inline std::vector<double> Accumulator::variance() const {
  */
 inline std::vector<double> Accumulator::std_error() const {
   auto const var = variance();
-  std::vector<double> err(var.size());
-  std::transform(var.begin(), var.end(), err.begin(), [this](double d) {
-    return std::sqrt(d / static_cast<double>(m_n));
+  std::vector<double> err{};
+  auto const denominator = static_cast<double>(m_n);
+  std::ranges::transform(var, std::back_inserter(err), [denominator](double d) {
+    return std::sqrt(d / denominator);
   });
   return err;
 }

@@ -128,7 +128,7 @@ Variant LBFluidNode::do_call_method(std::string const &name,
         vec[8] -= diagonal_term;
       }
       auto tensor = Utils::Matrix<double, 3, 3>{};
-      std::copy(vec.begin(), vec.end(), tensor.m_data.begin());
+      std::ranges::copy(vec, tensor.m_data.begin());
       return std::vector<Variant>{tensor.row<0>().as_vector(),
                                   tensor.row<1>().as_vector(),
                                   tensor.row<2>().as_vector()};

@@ -573,7 +573,7 @@ void p3m_gpu_init(std::shared_ptr<P3MGpuParams> &data, int cao,
   }
 
   if (not data->is_initialized or mesh != Utils::Vector3i(p3m_gpu_data.mesh)) {
-    std::copy(mesh.begin(), mesh.end(), p3m_gpu_data.mesh);
+    std::ranges::copy(mesh, p3m_gpu_data.mesh);
     mesh_changed = true;
     do_reinit = true;
   }
@@ -582,7 +582,7 @@ void p3m_gpu_init(std::shared_ptr<P3MGpuParams> &data, int cao,
           static_cast<double>(std::numeric_limits<float>::epsilon());
       not data->is_initialized or
       (box_l - Utils::Vector3d(p3m_gpu_data.box)).norm() >= eps) {
-    std::copy(box_l.begin(), box_l.end(), p3m_gpu_data.box);
+    std::ranges::copy(box_l, p3m_gpu_data.box);
     do_reinit = true;
   }
 

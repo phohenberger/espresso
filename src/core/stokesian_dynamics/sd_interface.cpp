@@ -131,9 +131,8 @@ void propagate_vel_pos_sd(ParticleRangeStokesian const &particles,
   static std::vector<SD_particle_data> parts_buffer{};
 
   parts_buffer.clear();
-  std::transform(particles.begin(), particles.end(),
-                 std::back_inserter(parts_buffer),
-                 [](auto const &p) { return SD_particle_data(p); });
+  std::ranges::transform(particles, std::back_inserter(parts_buffer),
+                         [](auto const &p) { return SD_particle_data(p); });
   Utils::Mpi::gather_buffer(parts_buffer, ::comm_cart, 0);
 
   /* Buffer that holds local particle data, and all particles on the head

@@ -147,10 +147,9 @@ Variant Analysis::do_call_method(std::string const &name,
     context()->parallel_try_catch([&]() {
       auto neighbor_pids = get_neighbor_pids(system);
       Utils::Mpi::gather_buffer(neighbor_pids, context()->get_comm());
-      std::for_each(neighbor_pids.begin(), neighbor_pids.end(),
-                    [&dict](NeighborPIDs const &neighbor_pid) {
-                      dict[neighbor_pid.pid] = neighbor_pid.neighbor_pids;
-                    });
+      std::ranges::for_each(neighbor_pids, [&dict](auto const &nbhood) {
+        dict[nbhood.pid] = nbhood.neighbor_pids;
+      });
     });
     return make_unordered_map_of_variants(dict);
   }

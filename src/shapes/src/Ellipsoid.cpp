@@ -37,7 +37,7 @@ void Ellipsoid::calculate_dist(const Utils::Vector3d &pos, double &dist,
   double l = 0.;
   int distance_prefactor = -1;
   if (not inside_ellipsoid(ppos_e)) {
-    l = *std::max_element(m_semiaxes.begin(), m_semiaxes.end()) * ppos_e.norm();
+    l = *std::ranges::max_element(m_semiaxes) * ppos_e.norm();
     distance_prefactor = 1;
   }
 

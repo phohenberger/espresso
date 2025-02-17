@@ -113,9 +113,7 @@ template <class ValueOp> struct Map {
     using particle_type = typename ParticleRange::value_type;
     using value_op_type = decltype(ValueOp{}(std::declval<particle_type>()));
     std::vector<value_op_type> res;
-    std::transform(std::begin(particles), std::end(particles),
-                   std::back_inserter(res),
-                   [](auto const &p) { return ValueOp{}(p); });
+    std::ranges::transform(particles, std::back_inserter(res), ValueOp{});
     return res;
   }
 };

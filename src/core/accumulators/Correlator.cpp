@@ -52,8 +52,8 @@ std::vector<double> compress_linear(std::vector<double> const &A1,
   assert(A1.size() == A2.size());
   std::vector<double> A_compressed(A1.size());
 
-  std::transform(A1.begin(), A1.end(), A2.begin(), A_compressed.begin(),
-                 [](double a, double b) -> double { return 0.5 * (a + b); });
+  std::ranges::transform(A1, A2, A_compressed.begin(),
+                         [](double a, double b) { return 0.5 * (a + b); });
 
   return A_compressed;
 }
@@ -95,7 +95,7 @@ std::vector<double> componentwise_product(std::vector<double> const &A,
         "Error in componentwise product: The vector sizes do not match");
   }
 
-  std::transform(A.begin(), A.end(), B.begin(), C.begin(), std::multiplies<>());
+  std::ranges::transform(A, B, C.begin(), std::multiplies<>());
 
   return C;
 }
@@ -126,9 +126,9 @@ std::vector<double> square_distance_componentwise(std::vector<double> const &A,
 
   std::vector<double> C(A.size());
 
-  std::transform(
-      A.begin(), A.end(), B.begin(), C.begin(),
-      [](double a, double b) -> double { return Utils::sqr(a - b); });
+  std::ranges::transform(A, B, C.begin(), [](double a, double b) -> double {
+    return Utils::sqr(a - b);
+  });
 
   return C;
 }
@@ -143,22 +143,21 @@ std::vector<double> fcs_acf(std::vector<double> const &A,
         "Error in fcs_acf: The vector sizes do not match.");
   }
 
-  auto const C_size = A.size() / 3;
-  assert(3 * C_size == A.size());
+  auto const C_size = A.size() / 3u;
+  assert(3u * C_size == A.size());
 
-  std::vector<double> C(C_size, 0);
+  std::vector<double> C{};
+  C.reserve(C_size);
 
-  for (std::size_t i = 0; i < C_size; i++) {
-    for (int j = 0; j < 3; j++) {
-      auto const &a = A[3 * i + j];
-      auto const &b = B[3 * i + j];
-
-      C[i] -= Utils::sqr(a - b) / wsquare[j];
+  for (std::size_t i = 0u; i < C_size; i++) {
+    auto acc = 0.;
+    for (std::size_t j = 0u; j < 3u; j++) {
+      auto const a = A[3u * i + j];
+      auto const b = B[3u * i + j];
+      acc -= Utils::sqr(a - b) / wsquare[j];
     }
+    C.emplace_back(std::exp(acc));
   }
-
-  std::transform(C.begin(), C.end(), C.begin(),
-                 [](double c) -> double { return std::exp(c); });
 
   return C;
 }

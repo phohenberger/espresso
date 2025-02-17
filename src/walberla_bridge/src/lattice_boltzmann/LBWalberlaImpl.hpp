@@ -526,8 +526,8 @@ public:
     auto pdf_setter =
         InitialPDFsSetter(m_force_to_be_applied_id, m_pdf_field_id,
                           m_velocity_field_id, m_density);
-    for (auto b = blocks->begin(); b != blocks->end(); ++b) {
-      pdf_setter(&*b);
+    for (auto &block : *blocks) {
+      pdf_setter(&block);
     }
 
     // Initialize and register flag field (fluid/boundary)
@@ -585,14 +585,16 @@ public:
 
 private:
   void integrate_stream(std::shared_ptr<BlockStorage> const &blocks) {
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      (*m_stream)(&*b);
+    for (auto &block : *blocks)
+      (*m_stream)(&block);
   }
 
   void integrate_collide(std::shared_ptr<BlockStorage> const &blocks) {
     auto &cm_variant = *m_collision_model;
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      std::visit(m_run_collide_sweep, cm_variant, std::variant<IBlock *>(&*b));
+    for (auto &block : *blocks) {
+      auto const block_variant = std::variant<IBlock *>(&block);
+      std::visit(m_run_collide_sweep, cm_variant, block_variant);
+    }
     if (auto *cm = std::get_if<CollisionModelThermalized>(&cm_variant)) {
       cm->setTime_step(cm->getTime_step() + 1u);
     }
@@ -605,30 +607,30 @@ private:
 
   void apply_lees_edwards_pdf_interpolation(
       std::shared_ptr<BlockStorage> const &blocks) {
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      (*m_lees_edwards_pdf_interpol_sweep)(&*b);
+    for (auto &block : *blocks)
+      (*m_lees_edwards_pdf_interpol_sweep)(&block);
   }
 
   void apply_lees_edwards_vel_interpolation_and_shift(
       std::shared_ptr<BlockStorage> const &blocks) {
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      (*m_lees_edwards_vel_interpol_sweep)(&*b);
+    for (auto &block : *blocks)
+      (*m_lees_edwards_vel_interpol_sweep)(&block);
   }
 
   void apply_lees_edwards_last_applied_force_interpolation(
       std::shared_ptr<BlockStorage> const &blocks) {
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      (*m_lees_edwards_last_applied_force_interpol_sweep)(&*b);
+    for (auto &block : *blocks)
+      (*m_lees_edwards_last_applied_force_interpol_sweep)(&block);
   }
 
   void integrate_reset_force(std::shared_ptr<BlockStorage> const &blocks) {
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      (*m_reset_force)(&*b);
+    for (auto &block : *blocks)
+      (*m_reset_force)(&block);
   }
 
   void integrate_boundaries(std::shared_ptr<BlockStorage> const &blocks) {
-    for (auto b = blocks->begin(); b != blocks->end(); ++b)
-      (*m_boundary)(&*b);
+    for (auto &block : *blocks)
+      (*m_boundary)(&block);
   }
 
   void integrate_push_scheme() {

@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
+#include <iterator>
 #include <numeric>
 #include <tuple>
 #include <vector>
@@ -107,9 +108,8 @@ noise_statistics(NoiseKernel &&noise_function, std::size_t sample_size) {
   // get size of the arrays and size of the triangular correlation matrix
   auto const first_value = noise_function();
   auto const n_vectors = first_value.size();
-  std::vector<std::size_t> dimensions(n_vectors);
-  std::transform(first_value.begin(), first_value.end(), dimensions.begin(),
-                 [](auto const &element) { return get_size(element); });
+  std::vector<std::size_t> dimensions{};
+  std::ranges::transform(first_value, std::back_inserter(dimensions), get_size);
   auto const matrix_dim = std::accumulate(dimensions.begin(), dimensions.end(),
                                           std::size_t{0u}, std::plus<>());
 
