@@ -34,19 +34,6 @@
 
 
 
-// ===================================================
-// test hash function for custom pair
-struct pair_hash {
-    template <class T1, class T2>
-    std::size_t operator()(const std::pair<T1, T2>& p) const {
-        auto hash1 = std::hash<T1>{}(p.first);
-        auto hash2 = std::hash<T2>{}(p.second);
-        return hash1 ^ hash2; // Combine the two hash values
-    }
-};
-
-// ===================================================
-
 template <class SliceDouble3, class SliceInt>
 inline void write_particle(Particle const &p, std::unordered_map<int, int> const &id_to_index, SliceDouble3 &s_position, SliceDouble3 &s_force, SliceInt &s_id, SliceInt &s_type) {
   auto const pos = p.pos();
@@ -108,13 +95,16 @@ void cabana_short_range(BondKernel bond_kernel,
     int index = 0;
 
     bool const rebuild = cell_structure.get_rebuild_verlet_list();
+    //bool const rebuild = true;
 
     CabanaData saved_data;
 
+    // Load saved data if we do not have to rebuild
     if (!rebuild) {
       saved_data = cell_structure.get_cabana_data();
     }
 
+    // If we have to rebuild, we need to count the particles and create a new map
     if (rebuild) {
       
       for (auto const& p : particles) {
@@ -129,19 +119,23 @@ void cabana_short_range(BondKernel bond_kernel,
         }
       }
     } else {
+      // If we do not rebuild we can use the saved map
       id_to_index = saved_data.get_id_to_index();
       index = id_to_index.size();
     }
 
     const int number_of_unique_particles = index;
 
-    //std::cout << "Rank: " << rank << std::endl;
-    //std::cout << "Rebuild: " << rebuild << std::endl;
-    //std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
-    //std::cout << "Number of particles: " << particles.size() << std::endl;
-    //std::cout << "Number of ghost particles: " << ghost_particles.size() << std::endl;
+    std::cout << "Rank: " << rank << std::endl;
+    std::cout << "Rebuild: " << rebuild << std::endl;
+    std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
+    std::cout << "Number of particles: " << particles.size() << std::endl;
+    std::cout << "Number of ghost particles: " << ghost_particles.size() << std::endl;
 
     auto t2 = std::chrono::high_resolution_clock::now();
+
+
+
 
     // ===================================================
     // Create and fill particle storage
@@ -169,6 +163,9 @@ void cabana_short_range(BondKernel bond_kernel,
 
     auto t3 = std::chrono::high_resolution_clock::now();
 
+
+
+
     // ===================================================
     // Get Verlet Pairs and Fill list
     // ===================================================
@@ -177,6 +174,7 @@ void cabana_short_range(BondKernel bond_kernel,
 
     ListType verlet_list;
     
+    // Rebuild verlet list if needed
     if (rebuild) {
 
       verlet_list = ListType(slice_position, 0, slice_position.size(), 64);
@@ -187,9 +185,11 @@ void cabana_short_range(BondKernel bond_kernel,
 
       cell_structure.cabana_verlet_list_loop(kernel, verlet_criterion);
     } else {
+      // Else use the saved verlet list
       verlet_list = saved_data.get_verlet_list();
     }
 
+    // Save data for next iteration if we just rebuilt
     if (rebuild) {
       CabanaData new_data(verlet_list, id_to_index);
       cell_structure.set_cabana_data(std::make_unique<CabanaData>(new_data));
@@ -220,6 +220,8 @@ void cabana_short_range(BondKernel bond_kernel,
 
     auto t5 = std::chrono::high_resolution_clock::now();
 
+
+
     // ===================================================
     // Execute Kernel
     // ===================================================
@@ -235,6 +237,8 @@ void cabana_short_range(BondKernel bond_kernel,
 
     auto t6 = std::chrono::high_resolution_clock::now();
 
+
+
     // ===================================================
     // Add forces to particles
     // ===================================================
@@ -249,7 +253,14 @@ void cabana_short_range(BondKernel bond_kernel,
     }
 
     for (auto & p : ghost_particles) {
+        // Check if the ghost particle is in the map, i.e. was used during force calculation
         if (id_to_index.find(p.id()) == id_to_index.end()) {
+          continue;
+        }
+
+        // Only add forces to ghost particles that are not as normal particles in the map,
+        // as they have already been added to the force calculation
+        if (id_to_index.at(p.id()) < particles.size()) {
           continue;
         }
 
