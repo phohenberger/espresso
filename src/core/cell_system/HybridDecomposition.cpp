@@ -57,41 +57,36 @@ HybridDecomposition::HybridDecomposition(boost::mpi::communicator comm,
   /* Vector containing cells of both child decompositions */
   m_local_cells = m_regular_decomposition.get_local_cells();
   auto local_cells_n_square = m_n_square.get_local_cells();
-  std::copy(local_cells_n_square.begin(), local_cells_n_square.end(),
-            std::back_inserter(m_local_cells));
+  std::ranges::copy(local_cells_n_square, std::back_inserter(m_local_cells));
 
   /* Vector containing ghost cells of both child decompositions */
   m_ghost_cells = m_regular_decomposition.get_ghost_cells();
   auto ghost_cells_n_square = m_n_square.get_ghost_cells();
-  std::copy(ghost_cells_n_square.begin(), ghost_cells_n_square.end(),
-            std::back_inserter(m_ghost_cells));
+  std::ranges::copy(ghost_cells_n_square, std::back_inserter(m_ghost_cells));
 
   /* Communicators that contain communications of both child decompositions */
   m_exchange_ghosts_comm = m_regular_decomposition.exchange_ghosts_comm();
   auto exchange_ghosts_comm_n_square = m_n_square.exchange_ghosts_comm();
-  std::copy(exchange_ghosts_comm_n_square.communications.begin(),
-            exchange_ghosts_comm_n_square.communications.end(),
-            std::back_inserter(m_exchange_ghosts_comm.communications));
+  std::ranges::copy(exchange_ghosts_comm_n_square.communications,
+                    std::back_inserter(m_exchange_ghosts_comm.communications));
 
   m_collect_ghost_force_comm =
       m_regular_decomposition.collect_ghost_force_comm();
   auto collect_ghost_force_comm_n_square =
       m_n_square.collect_ghost_force_comm();
-  std::copy(collect_ghost_force_comm_n_square.communications.begin(),
-            collect_ghost_force_comm_n_square.communications.end(),
-            std::back_inserter(m_collect_ghost_force_comm.communications));
+  std::ranges::copy(
+      collect_ghost_force_comm_n_square.communications,
+      std::back_inserter(m_collect_ghost_force_comm.communications));
 
   /* coupling between the child decompositions via neighborship relation */
   std::vector<Cell *> additional_reds = m_n_square.get_local_cells();
-  std::copy(ghost_cells_n_square.begin(), ghost_cells_n_square.end(),
-            std::back_inserter(additional_reds));
+  std::ranges::copy(ghost_cells_n_square, std::back_inserter(additional_reds));
   for (auto &local_cell : m_regular_decomposition.local_cells()) {
     std::vector<Cell *> red_neighbors(local_cell->m_neighbors.red().begin(),
                                       local_cell->m_neighbors.red().end());
     std::vector<Cell *> black_neighbors(local_cell->m_neighbors.black().begin(),
                                         local_cell->m_neighbors.black().end());
-    std::copy(additional_reds.begin(), additional_reds.end(),
-              std::back_inserter(red_neighbors));
+    std::ranges::copy(additional_reds, std::back_inserter(red_neighbors));
     local_cell->m_neighbors = Neighbors<Cell *>(red_neighbors, black_neighbors);
   }
 }

@@ -139,6 +139,12 @@ void LBFluidGPU::make_instance(VariantMap const &params) {
   auto const visc = get_value<double>(params, "kinematic_viscosity");
   auto const dens = get_value<double>(params, "density");
   auto const precision = get_value<bool>(params, "single_precision");
+  auto const blocks_per_mpi_rank = get_value<Utils::Vector3i>(
+      m_lattice->get_parameter("blocks_per_mpi_rank"));
+  if (blocks_per_mpi_rank != Utils::Vector3i{{1, 1, 1}}) {
+    throw std::runtime_error(
+        "Using more than one block per MPI rank is not supported for GPU LB");
+  }
   auto const lb_lattice = m_lattice->lattice();
   auto const lb_visc = m_conv_visc * visc;
   auto const lb_dens = m_conv_dens * dens;
@@ -202,7 +208,7 @@ std::vector<Variant> LBFluid::get_average_pressure_tensor() const {
   auto const local = m_instance->get_pressure_tensor() / m_conv_press;
   auto const tensor_flat = mpi_reduce_sum(context()->get_comm(), local);
   auto tensor = Utils::Matrix<double, 3, 3>{};
-  std::copy(tensor_flat.begin(), tensor_flat.end(), tensor.m_data.begin());
+  std::ranges::copy(tensor_flat, tensor.m_data.begin());
   return std::vector<Variant>{tensor.row<0>().as_vector(),
                               tensor.row<1>().as_vector(),
                               tensor.row<2>().as_vector()};

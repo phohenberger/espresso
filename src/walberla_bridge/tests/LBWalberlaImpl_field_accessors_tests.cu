@@ -106,11 +106,13 @@ boost::test_tools::predicate_result almost_equal(R const &val, R const &ref,
   for (auto i = 0ul; i < val.size(); ++i) {
     if (auto const diff = std::abs(val[i] - ref[i]); diff > atol) {
       res = false;
-      res.message() << "val{" << print_first_n(val) << "} and " << "ref{"
-                    << print_first_n(ref) << "} mismatch: " << "val[" << i
-                    << "]{" << val[i] << "} != " << "ref[" << i << "]{"
-                    << ref[i] << "} " << "(difference{" << diff << "} > delta{"
-                    << atol << "})";
+      // clang-format off
+      res.message() << "val{" << print_first_n(val) << "} and "
+                    << "ref{" << print_first_n(ref) << "} mismatch: "
+                    << "val[" << i << "]{" << val[i] << "} != "
+                    << "ref[" << i << "]{" << ref[i] << "} "
+                    << "(difference{" << diff << "} > delta{" << atol << "})";
+      // clang-format on
       break;
     }
   }
@@ -156,7 +158,8 @@ template <typename FT, lbmpy::Arch Architecture> struct Fixture {
     auto const grid_dim = Utils::Vector3i::broadcast(4);
     auto const viscosity = FT(1.5);
     auto const density = FT(0.9);
-    lattice = std::make_shared<::LatticeWalberla>(grid_dim, mpi_shape, 1u);
+    lattice =
+        std::make_shared<::LatticeWalberla>(grid_dim, mpi_shape, mpi_shape, 1u);
     lbfluid = std::make_shared<LBWalberlaImplTest<FT, Architecture>>(
         lattice, viscosity, density);
   }
@@ -239,8 +242,8 @@ template <typename FT, lbmpy::Arch Architecture> struct Fixture {
       auto const old_laf = lbm::accessor::Vector::get(force_field, it);
       auto const old_rho = lbm::accessor::Density::get(pdf_field, it);
       auto ref_pop = old_pop;
-      std::transform(old_pop.begin(), old_pop.end(), ref_pop.begin(),
-                     [](auto const &f) { return FT{2} * f; });
+      std::ranges::transform(old_pop, ref_pop.begin(),
+                             [](auto const &f) { return FT{2} * f; });
       lbm::accessor::Population::set(pdf_field, ref_pop, it);
       auto const new_pop = lbm::accessor::Population::get(pdf_field, it);
       auto const new_pre = lbm::accessor::PressureTensor::get(pdf_field, it);

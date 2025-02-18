@@ -84,12 +84,11 @@ protected:
   auto make_instance(VariantMap const &args, F &allocator) const {
     auto lattice = get_value<std::shared_ptr<LatticeWalberla>>(args, "lattice");
     auto reactants = get_value<std::vector<Variant>>(args, "reactants");
-    auto output = ::walberla::EKReactionBase::reactants_type(reactants.size());
+    auto output = ::walberla::EKReactionBase::reactants_type();
     auto get_instance = [](Variant const &v) {
       return get_value<std::shared_ptr<EKReactant>>(v)->get_instance();
     };
-    std::transform(reactants.begin(), reactants.end(), output.begin(),
-                   get_instance);
+    std::ranges::transform(reactants, std::back_inserter(output), get_instance);
 
     auto const coefficient =
         get_value<double>(args, "coefficient") * get_conversion_coefficient();

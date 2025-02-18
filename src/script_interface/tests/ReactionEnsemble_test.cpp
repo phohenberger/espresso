@@ -95,7 +95,7 @@ BOOST_FIXTURE_TEST_CASE(ReactionEnsemble_test, ParticleFactory) {
     params["kT"] = kT;
     params["exclusion_range"] = exclusion_range;
     params["exclusion_radius_per_type"] = make_unordered_map_of_variants(radii);
-    auto &&sp = ctx->make_shared_local("Testing::ReactionEnsemble", params);
+    auto &&sp = ctx->make_shared("Testing::ReactionEnsemble", params);
     return std::dynamic_pointer_cast<Testing::ReactionEnsemble>(sp);
   };
   auto const make_reaction =
@@ -114,7 +114,7 @@ BOOST_FIXTURE_TEST_CASE(ReactionEnsemble_test, ParticleFactory) {
         params["product_types"] = make_vector_of_variants(product_types);
         params["product_coefficients"] =
             make_vector_of_variants(product_coefficients);
-        auto &&si_obj = ctx->make_shared_local("SingleReaction", params);
+        auto &&si_obj = ctx->make_shared("SingleReaction", params);
         return std::dynamic_pointer_cast<
             ScriptInterface::ReactionMethods::SingleReaction>(si_obj);
       };

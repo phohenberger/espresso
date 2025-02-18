@@ -106,7 +106,7 @@ void LBWalberla::veto_kT(double kT) const {
   auto const energy_conversion =
       Utils::int_pow<2>(lb_params->get_agrid() / lb_params->get_tau());
   auto const lb_kT = lb_fluid->get_kT() * energy_conversion;
-  if (not ::Thermostat::are_kT_equal(lb_kT, kT)) {
+  if (not(::Thermostat::are_kT_equal(lb_kT, kT))) {
     throw std::runtime_error("Temperature change not supported by LB");
   }
 }

@@ -50,7 +50,7 @@ private:
 
 public:
   bool contains(std::shared_ptr<Constraint> const &constraint) const noexcept {
-    return std::find(begin(), end(), constraint) != end();
+    return std::ranges::find(*this, constraint) != end();
   }
   void add(std::shared_ptr<Constraint> const &constraint);
   void remove(std::shared_ptr<Constraint> const &constraint);

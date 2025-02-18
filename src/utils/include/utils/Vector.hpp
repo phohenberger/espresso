@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SRC_UTILS_INCLUDE_UTILS_VECTOR_HPP
-#define SRC_UTILS_INCLUDE_UTILS_VECTOR_HPP
+
+#pragma once
 
 /**
  * @file
@@ -30,6 +30,7 @@
 #include <boost/qvm/vec_traits.hpp>
 
 #include "utils/Array.hpp"
+#include "utils/get.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -64,14 +65,14 @@ public:
   using Array<T, N>::max_size;
   using Array<T, N>::fill;
   using Array<T, N>::broadcast;
-  Vector() = default;
+  Vector() noexcept = default;
   Vector(Vector const &) = default;
   Vector &operator=(Vector const &) = default;
 
   void swap(Vector &rhs) { std::swap_ranges(begin(), end(), rhs.begin()); }
 
 private:
-  constexpr void copy_init(T const *first, T const *last) {
+  constexpr void copy_init(T const *first, T const *last) noexcept {
     auto it = begin();
     while (first != last) {
       *it++ = *first++;
@@ -82,7 +83,7 @@ public:
   template <class Range>
   explicit constexpr Vector(Range const &rng)
       : Vector(std::begin(rng), std::end(rng)) {}
-  explicit constexpr Vector(T const (&v)[N]) : Base() {
+  explicit constexpr Vector(T const (&v)[N]) noexcept : Base() {
     copy_init(std::begin(v), std::end(v));
   }
 
@@ -107,7 +108,7 @@ public:
 
   /** @brief Create a vector that has all entries set to the same value. */
   DEVICE_QUALIFIER static constexpr Vector<T, N>
-  broadcast(typename Base::value_type const &value) {
+  broadcast(typename Base::value_type const &value) noexcept {
     Vector<T, N> ret{};
     for (std::size_t i = 0u; i != N; ++i) {
       ret[i] = value;
@@ -485,18 +486,29 @@ template <typename T> struct decay_to_scalar<Vector<T, 1>> {
 };
 
 template <std::size_t I, class T, std::size_t N>
-struct tuple_element<I, Vector<T, N>> {
-  using type = T;
+typename std::tuple_element<I, Vector<T, N>>::type &
+get(Vector<T, N> &a) noexcept {
+  return a[I];
+}
+
+template <std::size_t I, class T, std::size_t N>
+const typename std::tuple_element<I, Vector<T, N>>::type &
+get(Vector<T, N> const &a) noexcept {
+  return a[I];
+}
+
+} // namespace Utils
+
+template <std::size_t I, class T, std::size_t N>
+struct std::tuple_element<I, Utils::Vector<T, N>> {
+  static_assert(I < N, "Utils::Vector index must be in range");
+  using type = typename std::enable_if_t<(I < N), T>;
 };
 
 template <class T, std::size_t N>
-struct tuple_size<Vector<T, N>> : std::integral_constant<std::size_t, N> {};
+struct std::tuple_size<Utils::Vector<T, N>>
+    : std::integral_constant<std::size_t, N> {};
 
-template <std::size_t I, class T, std::size_t N>
-auto get(Vector<T, N> const &a) -> std::enable_if_t<(I < N), const T &> {
-  return a[I];
-}
-} // namespace Utils
 namespace boost {
 namespace qvm {
 
@@ -537,5 +549,3 @@ UTILS_ARRAY_BOOST_MPI_T(Utils::Vector, N)
 UTILS_ARRAY_BOOST_BIT_S(Utils::Vector, N)
 UTILS_ARRAY_BOOST_CLASS(Utils::Vector, N, object_serializable)
 UTILS_ARRAY_BOOST_TRACK(Utils::Vector, N, track_never)
-
-#endif

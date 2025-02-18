@@ -57,8 +57,8 @@ class HydrodynamicInteraction(ScriptInterfaceHelper):
         pass
 
     def valid_keys(self):
-        return {"agrid", "tau", "density", "ext_force_density",
-                "kinematic_viscosity", "lattice", "kT", "seed"}
+        return {"agrid", "tau", "lattice", "density", "ext_force_density",
+                "kinematic_viscosity", "kT", "seed", "blocks_per_mpi_rank"}
 
     def required_keys(self):
         return {"lattice", "density", "kinematic_viscosity", "tau"}
@@ -119,7 +119,7 @@ class LBFluidWalberla(HydrodynamicInteraction,
 
     Parameters
     ----------
-    lattice : :obj:`espressomd.lb.LatticeWalberla <espressomd.detail.walberla.LatticeWalberla>`
+    lattice : :obj:`~espressomd.detail.walberla.LatticeWalberla`
         Lattice object. If not provided, a default one will be constructed
         using the ``agrid`` parameter.
     agrid : :obj:`float`
@@ -141,6 +141,9 @@ class LBFluidWalberla(HydrodynamicInteraction,
         Required for a thermalized fluid. Must be positive.
     single_precision : :obj:`bool`, optional
         Use single-precision floating-point arithmetic.
+    \\*\\*kwargs :
+        Additional parameters forwarded to the
+        :obj:`~espressomd.detail.walberla.LatticeWalberla` constructor.
 
     Methods
     -------
@@ -235,14 +238,21 @@ class LBFluidWalberla(HydrodynamicInteraction,
     def validate_params(self, params):
         super().validate_params(params)
 
+        # extract lattice-specific parameters
+        lattice_params = {}
+        for key in LatticeWalberla.valid_keys():
+            if key in params:
+                lattice_params[key] = params.pop(key)
+
         # construct default lattice if necessary
         if params.get("lattice") is None:
-            if "agrid" not in params:
-                raise ValueError("missing argument 'lattice' or 'agrid'")
-            params["lattice"] = LatticeWalberla(
-                agrid=params.pop("agrid"), n_ghost_layers=1)
-        elif "agrid" in params:
-            raise ValueError("cannot provide both 'lattice' and 'agrid'")
+            for key in LatticeWalberla.required_keys():
+                if key not in lattice_params:
+                    raise ValueError(f"missing argument 'lattice' or '{key}'")
+            params["lattice"] = LatticeWalberla(**lattice_params)
+        elif lattice_params:
+            any_key = list(lattice_params.keys())[0]
+            raise ValueError(f"cannot provide both 'lattice' and '{any_key}'")
 
         utils.check_required_keys(self.required_keys(), params.keys())
         utils.check_valid_keys(self.valid_keys(), params.keys())
@@ -660,6 +670,7 @@ class VTKOutput(VTKOutputBase):
     _so_name = "walberla::LBVTKHandle"
     _so_creation_policy = "GLOBAL"
     _so_bind_methods = ("enable", "disable", "write")
+    _so_features = ("WALBERLA",)
 
     def required_keys(self):
         return self.valid_keys() - self.default_params().keys()

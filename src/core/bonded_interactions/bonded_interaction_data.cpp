@@ -48,7 +48,7 @@ double BondedInteractionsMap::maximal_cutoff() const {
       });
 
   /* Check if there are dihedrals */
-  auto const any_dihedrals = std::any_of(begin(), end(), [](auto const &kv) {
+  auto const any_dihedrals = std::ranges::any_of(*this, [](auto const &kv) {
     return (boost::get<DihedralBond>(&(*kv.second)) ||
             boost::get<TabulatedDihedralBond>(&(*kv.second)));
   });
@@ -98,8 +98,14 @@ void BondedInteractionsMap::activate_bond(mapped_type const &ptr) {
 void BondedInteractionsMap::deactivate_bond(mapped_type const &ptr) {
   if (auto bond = boost::get<ThermalizedBond>(ptr.get())) {
     bond->unset_thermostat_view();
+    n_thermalized_bonds = -1;
   }
   if (auto bond = boost::get<IBMVolCons>(ptr.get())) {
     bond->unset_volumes_view();
   }
+#ifdef BOND_CONSTRAINT
+  if (boost::get<RigidBond>(ptr.get()) != nullptr) {
+    n_rigid_bonds = -1;
+  }
+#endif
 }

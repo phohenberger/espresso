@@ -67,6 +67,7 @@ class CheckpointTest(ut.TestCase):
     checkpoint.load(0)
     checkpoint.save(1)
     path_cpt_root = pathlib.Path(checkpoint.checkpoint_dir)
+    n_nodes = system.cell_system.get_state()["n_nodes"]
 
     @classmethod
     def setUpClass(cls):
@@ -138,6 +139,22 @@ class CheckpointTest(ut.TestCase):
             self.assertIn(key, state)
             np.testing.assert_allclose(np.copy(state[key]), reference[key],
                                        atol=1E-7, err_msg=f"{key} differs")
+
+        state = lbf.lattice.get_params()
+        reference = {"agrid": 2.0, "n_ghost_layers": 1,
+                     "blocks_per_mpi_rank": [1, 1, 1]}
+        for key in reference:
+            self.assertIn(key, state)
+            np.testing.assert_allclose(np.copy(state[key]), reference[key],
+                                       atol=1E-7, err_msg=f"{key} differs")
+
+        state = lb_lattice_blocks_per_mpi.get_params()
+        reference["blocks_per_mpi_rank"] = [1, 1, 2]
+        for key in reference:
+            self.assertIn(key, state)
+            np.testing.assert_allclose(np.copy(state[key]), reference[key],
+                                       atol=1E-7, err_msg=f"{key} differs")
+
         self.assertTrue(lbf.is_active)
         if "LB.CPU" in modes:
             self.assertFalse(lbf.single_precision)
@@ -269,7 +286,6 @@ class CheckpointTest(ut.TestCase):
             np.copy(ek_species[:, :, :].is_boundary), False)
 
     @utx.skipIfMissingFeatures(["WALBERLA"])
-    @ut.skipIf('LB.GPU' in modes, 'VTK not implemented for LB GPU')
     @ut.skipIf(not has_lb_mode, "Skipping test due to missing LB mode.")
     def test_lb_vtk(self):
         lbf = system.lb
@@ -376,10 +392,12 @@ class CheckpointTest(ut.TestCase):
 
     @ut.skipIf('LB.GPU' in modes, 'Lees-Edwards not implemented for LB GPU')
     @ut.skipIf('INT.NPT' in modes, 'Lees-Edwards not compatible with NPT')
+    @ut.skipIf('LB' in modes and n_nodes not in (1, 2, 3),
+               'Lees-Edwards not implemented for certain decompositions')
     def test_lees_edwards(self):
         lebc = system.lees_edwards
         protocol = lebc.protocol
-        self.assertEqual(lebc.shear_direction, "x")
+        self.assertEqual(lebc.shear_direction, "z")
         self.assertEqual(lebc.shear_plane_normal, "y")
         self.assertIsInstance(protocol, espressomd.lees_edwards.LinearShear)
         self.assertAlmostEqual(protocol.initial_pos_offset, 0.1, delta=1e-10)
@@ -836,8 +854,8 @@ class CheckpointTest(ut.TestCase):
         state = actor.get_params()
         reference = {'prefactor': 1.0, 'accuracy': 0.01, 'mesh': 3 * [8],
                      'cao': 1, 'alpha': 12.0, 'r_cut': 2.4, 'tune': False,
-                     'mesh_off': [0.5, 0.5, 0.5], 'epsilon': 2.0,
-                     'timings': 15, 'single_precision': True}
+                     'mesh_off': [0.5, 0.5, 0.5], 'epsilon': 2.0, 'timings': 15,
+                     'tune_limits': [11, 15], 'single_precision': True}
         for key in reference:
             self.assertIn(key, state)
             np.testing.assert_almost_equal(state[key], reference[key],
@@ -853,6 +871,7 @@ class CheckpointTest(ut.TestCase):
         reference = {'prefactor': 1.0, 'accuracy': 0.1, 'mesh': 3 * [10],
                      'cao': 1, 'alpha': 1.0, 'r_cut': 1.0, 'tune': False,
                      'timings': 15, 'check_neutrality': True,
+                     'tune_limits': [8, 12],
                      'single_precision': single_precision,
                      'check_complex_residuals': False,
                      'charge_neutrality_tolerance': 1e-12}
@@ -871,6 +890,7 @@ class CheckpointTest(ut.TestCase):
         p3m_reference = {'prefactor': 1.0, 'accuracy': 0.1, 'mesh': 3 * [10],
                          'cao': 1, 'alpha': 1.0, 'r_cut': 1.0, 'tune': False,
                          'timings': 15, 'check_neutrality': True,
+                         'tune_limits': [8, 12],
                          'check_complex_residuals': False,
                          'charge_neutrality_tolerance': 7e-12}
         elc_reference = {'gap_size': 6.0, 'maxPWerror': 0.1,

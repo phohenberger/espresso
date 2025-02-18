@@ -18,9 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// kernel generated with pystencils v1.3.3, lbmpy v1.3.3,
+// kernel generated with pystencils v1.3.7, lbmpy v1.3.7, sympy v1.12.1,
 // lbmpy_walberla/pystencils_walberla from waLBerla commit
-// b0842e1a493ce19ef1bbb8d2cf382fc343970a7f
+// f36fa0a68bae59f0b516f6587ea8fa7c24a41141
 
 /*
  * Boundary class.
@@ -116,7 +116,7 @@ public:
                                            double rate_coefficient,
                                            double stoech_0)
       : indexVectorID(indexVectorID_), rho_0ID(rho_0ID_), order_0_(order_0),
-        rate_coefficient_(rate_coefficient), stoech_0_(stoech_0){};
+        rate_coefficient_(rate_coefficient), stoech_0_(stoech_0) {}
 
   void run(IBlock *block);
 

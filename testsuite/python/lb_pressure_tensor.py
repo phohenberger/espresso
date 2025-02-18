@@ -19,10 +19,11 @@
 import unittest as ut
 import unittest_decorators as utx
 import numpy as np
+# import scipy.optimize
+# import scipy.integrate
 
 import espressomd
 import espressomd.lb
-# import scipy.optimize
 
 N_CELLS = 12
 
@@ -43,19 +44,21 @@ class TestLBPressureTensor:
     system.time_step = params["tau"]
     system.cell_system.skin = 0
 
-    def tearDown(self):
-        self.system.lb = None
-        self.system.thermostat.turn_off()
+    @classmethod
+    def tearDownClass(cls):
+        cls.system.lb = None
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         # Setup
-        self.lbf = self.lb_class(**self.params, **self.lb_params)
-        self.system.lb = self.lbf
-        self.system.thermostat.set_lb(LB_fluid=self.lbf, seed=42)
+        cls.lbf = cls.lb_class(**cls.params, **cls.lb_params)
+        cls.system.lb = cls.lbf
 
         # Warmup
-        self.system.integrator.run(500)
+        cls.system.integrator.run(500)
+        cls.sample_pressure(cls)
 
+    def sample_pressure(self):
         # Sampling
         self.p_global = np.zeros((self.steps, 3, 3))
         self.p_node0 = np.zeros((self.steps, 3, 3))
@@ -154,6 +157,14 @@ class TestLBPressureTensorCPU(TestLBPressureTensor, ut.TestCase):
     steps = 5000
 
 
+@utx.skipIfMissingFeatures("WALBERLA")
+class TestLBPressureTensorBlocksCPU(TestLBPressureTensor, ut.TestCase):
+
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": True, "blocks_per_mpi_rank": [2, 2, 2]}
+    steps = 5000
+
+
 # TODO WALBERLA
 """
 @utx.skipIfMissingFeatures("WALBERLA")
@@ -185,13 +196,13 @@ class TestLBPressureTensorGPU(TestLBPressureTensor, ut.TestCase):
                 # integrate first part numerically, fit exponential to tail
                 t_max_fit = 50 * tau
                 ts = np.arange(0, t_max_fit, 2 * tau)
-                numeric_integral = np.trapz(acf[:len(ts)], dx=2 * self.params["tau"])
+                numeric_integral = scipy.integrate.trapezoid(acf[:len(ts)], dx=2 * self.params["tau"])
 
                 # fit tail
-                def f(x, a, b): return a * np.exp(-b * x)
+                def fit(x, a, b): return a * np.exp(-b * x)
 
-                (a, b), _ = scipy.optimize.curve_fit(f, acf[:len(ts)], ts)
-                tail = f(ts[-1], a, b) / b
+                (a, b), _ = scipy.optimize.curve_fit(fit, acf[:len(ts)], ts)
+                tail = fit(ts[-1], a, b) / b
 
                 integral = numeric_integral + tail
 

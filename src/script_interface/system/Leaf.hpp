@@ -63,6 +63,8 @@ protected:
   }
 
 public:
+  ~Leaf() override = default;
+
   void bind_system(std::shared_ptr<::System::System> const &system) {
     assert(m_system.expired() or m_system.lock() == system);
     m_system = system;

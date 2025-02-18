@@ -112,16 +112,12 @@ inline auto get_argsort(boost::mpi::communicator const &comm,
       }
     }
     // get vector of indices that sorts the data vectors
-    std::vector<unsigned int> iota(n_part);
-    std::iota(iota.begin(), iota.end(), 0u);
     argsort.reserve(n_part);
     auto const pid_begin = std::begin(unsorted_pids);
-    auto const pid_end = std::end(unsorted_pids);
     for (auto const pid : sorted_pids) {
-      auto const pid_pos = std::find(pid_begin, pid_end, pid);
-      auto const i =
-          static_cast<std::size_t>(std::distance(pid_begin, pid_pos));
-      argsort.emplace_back(iota[i]);
+      auto const pid_pos = std::ranges::find(unsorted_pids, pid);
+      auto const hops = std::distance(pid_begin, pid_pos);
+      argsort.emplace_back(static_cast<unsigned>(hops));
     }
   }
   return argsort;

@@ -135,6 +135,28 @@ double System::particle_short_range_energy_contribution(int pid) {
   return ret;
 }
 
+std::optional<double> System::particle_bond_energy(int pid, int bond_id,
+                                                   std::vector<int> partners) {
+  if (cell_structure->get_resort_particles()) {
+    cell_structure->update_ghosts_and_resort_particle(get_global_ghost_flags());
+  }
+  Particle const *p = cell_structure->get_local_particle(pid);
+  if (not p or p->is_ghost())
+    return {}; // not available on this MPI rank or ghost
+  auto const &iaparams = *bonded_ias->at(bond_id);
+  try {
+    auto resolved_partners = cell_structure->resolve_bond_partners(partners);
+    auto const coulomb_kernel = coulomb.pair_energy_kernel();
+    return calc_bonded_energy(
+        iaparams, *p,
+        std::span(resolved_partners.data(), resolved_partners.size()), *box_geo,
+        get_ptr(coulomb_kernel));
+  } catch (const BondResolutionError &) {
+    bond_broken_error(p->id(), partners);
+    return {};
+  }
+}
+
 #ifdef DIPOLE_FIELD_TRACKING
 void System::calculate_long_range_fields() {
   dipoles.calc_long_range_field(cell_structure->local_particles());

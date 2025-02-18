@@ -29,7 +29,7 @@ import espressomd.magnetostatics
 class Test(ut.TestCase):
     """
     Check all P3M algorithms against the Madelung constant of 1D, 2D and 3D
-    NaCl lattices. See user guide sections :ref:`Madelung electrostatics` and
+    lattices. See user guide sections :ref:`Madelung electrostatics` and
     :ref:`Madelung magnetostatics` for more details.
     """
 

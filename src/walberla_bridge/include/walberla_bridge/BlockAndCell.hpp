@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 The ESPResSo project
+ * Copyright (C) 2020-2025 The ESPResSo project
  *
  * This file is part of ESPResSo.
  *
@@ -26,11 +26,35 @@
 
 #include "LatticeWalberla.hpp"
 
+#include <array>
+#include <cmath>
+#include <concepts>
 #include <memory>
 #include <optional>
+#include <type_traits>
+
+namespace detail {
+template <typename T> struct is_real_vector : std::false_type {};
+
+template <std::floating_point T>
+struct is_real_vector<std::array<T, 3>> : std::true_type {};
+
+template <std::floating_point T>
+struct is_real_vector<walberla::Vector3<T>> : std::true_type {};
+
+template <std::floating_point T>
+struct is_real_vector<Utils::Vector<T, 3>> : std::true_type {};
+} // namespace detail
+
+template <typename T>
+concept real_vector = detail::is_real_vector<T>::value;
 
 namespace walberla {
-// Helpers to retrieve blocks and cells
+
+inline Cell to_cell(Utils::Vector3i const &xyz) {
+  return {xyz[0], xyz[1], xyz[2]};
+}
+
 struct BlockAndCell {
   IBlock *block;
   Cell cell;
@@ -68,7 +92,7 @@ get_block_and_cell(::LatticeWalberla const &lattice,
   // Transform coords to block local
   Cell local_cell;
 
-  Cell global_cell{uint_c(node[0]), uint_c(node[1]), uint_c(node[2])};
+  Cell global_cell = to_cell(node);
   blocks->transformGlobalToBlockLocalCell(local_cell, *block, global_cell);
   return {{block, local_cell}};
 }
@@ -83,6 +107,28 @@ inline IBlock *get_block(::LatticeWalberla const &lattice,
     block = get_block_extended(lattice, pos, lattice.get_ghost_layers());
   }
   return block;
+}
+
+/**
+ * @brief Get the block-local coordinates of a block corner.
+ *
+ * This method leverages the fact that the grid spacing is unity in LB units,
+ * i.e. floating-point coordinates can be cast to integers indices.
+ */
+inline auto convert_cell_corner_to_coord(real_vector auto const &corner) {
+  return Utils::Vector3i{{static_cast<int>(std::round(corner[0])),
+                          static_cast<int>(std::round(corner[1])),
+                          static_cast<int>(std::round(corner[2]))}};
+}
+
+/** @brief Get the block-local coordinates of the lower corner of a block. */
+inline auto get_min_corner(IBlock const &block) {
+  return convert_cell_corner_to_coord(block.getAABB().minCorner());
+}
+
+/** @brief Get the block-local coordinates of the upper corner of a block. */
+inline auto get_max_corner(IBlock const &block) {
+  return convert_cell_corner_to_coord(block.getAABB().maxCorner());
 }
 
 } // namespace walberla

@@ -84,7 +84,7 @@ public:
   Matrix() = default;
   Matrix(std::initializer_list<T> init_list) {
     assert(init_list.size() == Rows * Cols);
-    std::copy(init_list.begin(), init_list.end(), begin());
+    std::ranges::copy(init_list, begin());
   }
   Matrix(std::initializer_list<std::initializer_list<T>> init_list) {
     assert(init_list.size() == Rows);

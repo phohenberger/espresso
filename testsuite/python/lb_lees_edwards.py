@@ -86,6 +86,7 @@ class LBLeesEdwards(ut.TestCase):
     """
 
     def setUp(self):
+        system.box_l = [17, 17, 1]
         system.lees_edwards.set_boundary_conditions(
             shear_direction="x", shear_plane_normal="y",
             protocol=espressomd.lees_edwards.Off())
@@ -374,6 +375,14 @@ class LBLeesEdwards(ut.TestCase):
                 system.lb = espressomd.lb.LBFluidWalberla(
                     lattice=lattice, density=1., kinematic_viscosity=1.,
                     tau=system.time_step)
+
+        system.box_l = [16, 16, 1]
+        with self.assertRaisesRegex(ValueError, "LB LEbc doesn't support domain decomposition along the shear and normal directions"):
+            for blocks_per_mpi_rank in ([2, 1, 1], [1, 2, 1]):
+                with LEContextManager('x', 'y', 1.):
+                    system.lb = espressomd.lb.LBFluidWalberla(
+                        agrid=1., density=1., kinematic_viscosity=1.,
+                        tau=system.time_step, blocks_per_mpi_rank=blocks_per_mpi_rank)
 
 
 if __name__ == "__main__":

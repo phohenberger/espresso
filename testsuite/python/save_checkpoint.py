@@ -59,6 +59,7 @@ system.time = 1.5
 system.force_cap = 1e8
 system.min_global_cut = 2.0
 system.max_oif_objects = 5
+n_nodes = system.cell_system.get_state()["n_nodes"]
 
 # create checkpoint folder
 config.cleanup_old_checkpoint()
@@ -66,16 +67,13 @@ checkpoint = espressomd.checkpointing.Checkpoint(
     **config.get_checkpoint_params())
 path_cpt_root = pathlib.Path(checkpoint.checkpoint_dir)
 
-# cleanup old checkpoint files
-for filepath in path_cpt_root.iterdir():
-    filepath.unlink(missing_ok=True)
-
 # Lees-Edwards boundary conditions
-if 'INT.NPT' not in modes and 'LB.GPU' not in modes:
+if 'INT.NPT' not in modes and 'LB.GPU' not in modes and (
+        'LB' not in modes or n_nodes in (1, 2, 3)):
     protocol = espressomd.lees_edwards.LinearShear(
         initial_pos_offset=0.1, time_0=0.2, shear_velocity=1.2)
     system.lees_edwards.set_boundary_conditions(
-        shear_direction="x", shear_plane_normal="y", protocol=protocol)
+        shear_direction="z", shear_plane_normal="y", protocol=protocol)
 
 has_ase = "ASE" in modes
 
@@ -86,7 +84,11 @@ if espressomd.has_features('WALBERLA') and 'LB.WALBERLA' in modes:
         lbf_class = espressomd.lb.LBFluidWalberlaGPU
     elif 'LB.CPU' in modes:
         lbf_class = espressomd.lb.LBFluidWalberla
-    lb_lattice = espressomd.lb.LatticeWalberla(agrid=2.0, n_ghost_layers=1)
+    lb_lattice_kwargs = {'agrid': 2.0, 'n_ghost_layers': 1}
+    lb_lattice = espressomd.lb.LatticeWalberla(**lb_lattice_kwargs)
+    lb_lattice_kwargs['blocks_per_mpi_rank'] = [1, 1, 2]
+    lb_lattice_blocks_per_mpi = espressomd.lb.LatticeWalberla(
+        **lb_lattice_kwargs)
 if lbf_class:
     lbf_cpt_mode = 0 if 'LB.ASCII' in modes else 1
     lbf = lbf_class(
@@ -154,6 +156,7 @@ if espressomd.has_features('P3M') and ('P3M' in modes or 'ELC' in modes):
         r_cut=1.0,
         check_complex_residuals=False,
         timings=15,
+        tune_limits=[8, 12],
         tune=False)
     if 'ELC' in modes:
         elc = espressomd.electrostatics.ELC(
@@ -317,6 +320,8 @@ checkpoint.register("ibm_volcons_bond")
 checkpoint.register("ibm_tribend_bond")
 checkpoint.register("ibm_triel_bond")
 checkpoint.register("break_spec")
+if espressomd.has_features('WALBERLA') and 'LB.WALBERLA' in modes:
+    checkpoint.register("lb_lattice_blocks_per_mpi")
 
 # calculate forces
 system.integrator.run(0)
@@ -350,6 +355,7 @@ if espressomd.has_features('DP3M') and 'DP3M' in modes:
         accuracy=0.01,
         single_precision=True,
         timings=15,
+        tune_limits=[11, 15],
         tune=False)
     system.magnetostatics.solver = dp3m
 
@@ -405,21 +411,20 @@ if lbf_class:
     vtk_suffix = config.test_name
     vtk_root = pathlib.Path("vtk_out")
     # create LB VTK callbacks
-    if 'LB.GPU' not in modes:  # TODO WALBERLA
-        lb_vtk_auto_id = f"auto_lb_{vtk_suffix}"
-        lb_vtk_manual_id = f"manual_lb_{vtk_suffix}"
-        config.recursive_unlink(vtk_root / lb_vtk_auto_id)
-        config.recursive_unlink(vtk_root / lb_vtk_manual_id)
-        lb_vtk_auto = espressomd.lb.VTKOutput(
-            identifier=lb_vtk_auto_id, delta_N=1,
-            observables=('density', 'velocity_vector'), base_folder=str(vtk_root))
-        lbf.add_vtk_writer(vtk=lb_vtk_auto)
-        lb_vtk_auto.disable()
-        lb_vtk_manual = espressomd.lb.VTKOutput(
-            identifier=lb_vtk_manual_id, delta_N=0,
-            observables=('density',), base_folder=str(vtk_root))
-        lbf.add_vtk_writer(vtk=lb_vtk_manual)
-        lb_vtk_manual.write()
+    lb_vtk_auto_id = f"auto_lb_{vtk_suffix}"
+    lb_vtk_manual_id = f"manual_lb_{vtk_suffix}"
+    config.recursive_unlink(vtk_root / lb_vtk_auto_id)
+    config.recursive_unlink(vtk_root / lb_vtk_manual_id)
+    lb_vtk_auto = espressomd.lb.VTKOutput(
+        identifier=lb_vtk_auto_id, delta_N=1,
+        observables=('density', 'velocity_vector'), base_folder=str(vtk_root))
+    lbf.add_vtk_writer(vtk=lb_vtk_auto)
+    lb_vtk_auto.disable()
+    lb_vtk_manual = espressomd.lb.VTKOutput(
+        identifier=lb_vtk_manual_id, delta_N=0,
+        observables=('density',), base_folder=str(vtk_root))
+    lbf.add_vtk_writer(vtk=lb_vtk_manual)
+    lb_vtk_manual.write()
     # create EK VTK callbacks
     ek_vtk_auto_id = f"auto_ek_{vtk_suffix}"
     ek_vtk_manual_id = f"manual_ek_{vtk_suffix}"

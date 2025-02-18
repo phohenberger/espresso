@@ -100,6 +100,7 @@ set_default_value with_ubsan false
 set_default_value with_asan false
 set_default_value with_static_analysis false
 set_default_value with_caliper false
+set_default_value with_fpe false
 set_default_value myconfig "default"
 set_default_value build_procs ${ci_procs}
 set_default_value check_procs ${build_procs}
@@ -147,6 +148,7 @@ cmake_params="${cmake_params} -D ESPRESSO_CTEST_ARGS:STRING=-j${check_procs} -D 
 cmake_params="${cmake_params} -D ESPRESSO_BUILD_BENCHMARKS=${make_check_benchmarks}"
 cmake_params="${cmake_params} -D ESPRESSO_BUILD_WITH_CCACHE=${with_ccache}"
 cmake_params="${cmake_params} -D ESPRESSO_BUILD_WITH_CALIPER=${with_caliper}"
+cmake_params="${cmake_params} -D ESPRESSO_BUILD_WITH_FPE=${with_fpe}"
 cmake_params="${cmake_params} -D ESPRESSO_BUILD_WITH_HDF5=${with_hdf5}"
 cmake_params="${cmake_params} -D ESPRESSO_BUILD_WITH_FFTW=${with_fftw}"
 cmake_params="${cmake_params} -D ESPRESSO_BUILD_WITH_GSL=${with_gsl}"
@@ -176,7 +178,7 @@ if [ "${with_cuda}" = true ]; then
 fi
 
 command -v nvidia-smi && nvidia-smi || true
-nvidia-smi -L || true
+command -v nvidia-smi && nvidia-smi -L || true
 if [ "${hide_gpu}" = true ]; then
     echo "Hiding gpu from Cuda via CUDA_VISIBLE_DEVICES"
     export CUDA_VISIBLE_DEVICES=""
@@ -198,20 +200,24 @@ echo "Creating ${builddir}..."
 mkdir -p "${builddir}"
 cd "${builddir}"
 
-# load MPI module if necessary
+# load modules
 if [ -f "/etc/os-release" ]; then
-    grep -q "suse" /etc/os-release && . /etc/profile.d/modules.sh && module load gnu-openmpi
-    grep -q "rhel\|fedora" /etc/os-release && for f in /etc/profile.d/*module*.sh; do . "${f}"; done && module load mpi
-fi
-
-# setup environment
-if grep -q "Ubuntu" /etc/os-release; then
-    default_gcov="$(which "gcov")"
-    custom_gcov="$(which "${GCOV:-gcov}")"
-    if [ ! "${custom_gcov}" = "${default_gcov}" ] && [ -d "${HOME}/.local/var/lib/alternatives" ]; then
-        update-alternatives --altdir "${HOME}/.local/etc/alternatives" \
-                            --admindir "${HOME}/.local/var/lib/alternatives" \
-                            --install "${HOME}/.local/bin/gcov" "gcov" "${custom_gcov}" 10
+    if grep -qP 'NAME="(openSUSE|SLES|SLED)' /etc/os-release; then
+        . /etc/profile.d/modules.sh
+        module load gnu-openmpi
+    elif grep -qP 'NAME="(Fedora|Red Hat Enterprise) Linux"' /etc/os-release; then
+        for f in /etc/profile.d/*module*.sh; do
+            . "${f}"
+        done
+        module load mpi
+    elif grep -q 'NAME="Ubuntu"' /etc/os-release; then
+        default_gcov="$(which "gcov")"
+        custom_gcov="$(which "${GCOV:-gcov}")"
+        if [ ! "${custom_gcov}" = "${default_gcov}" ] && [ -d "${HOME}/.local/var/lib/alternatives" ]; then
+            update-alternatives --altdir "${HOME}/.local/etc/alternatives" \
+                                --admindir "${HOME}/.local/var/lib/alternatives" \
+                                --install "${HOME}/.local/bin/gcov" "gcov" "${custom_gcov}" 10
+        fi
     fi
 fi
 

@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2017-2022 The ESPResSo project
+ * Copyright (C) 2010-2025 The ESPResSo project
+ * Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010
+ *   Max-Planck-Institute for Polymer Research, Theory Group
  *
  * This file is part of ESPResSo.
  *
@@ -17,31 +19,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef UTILS_KEYS_HPP
-#define UTILS_KEYS_HPP
+#pragma once
 
-#include <algorithm>
-#include <vector>
+#include "hdf5_patches.hpp"
 
-namespace Utils {
-/**
- * @brief Return the keys of a map type.
- *
- * Returns a vector of copies of the keys
- * of a map, unordered_map, ...
- */
-template <typename Map>
-auto keys(Map const &m) -> std::vector<typename Map::key_type> {
-  using value_type = typename Map::value_type;
-  using std::begin;
-  using std::end;
+#include <hdf5.h>
 
-  std::vector<typename Map::key_type> ret(m.size());
+#include <string>
 
-  std::transform(begin(m), end(m), ret.begin(),
-                 [](value_type const &kv) { return kv.first; });
-  return ret;
-}
-} // namespace Utils
+namespace Writer {
+namespace H5md {
 
-#endif
+struct Dataset {
+  std::string path() const { return group + "/" + name; }
+
+  std::string group;
+  std::string name;
+  hsize_t rank;
+  hid_t type;
+  hsize_t data_dim;
+  bool is_link;
+};
+
+} // namespace H5md
+} // namespace Writer

@@ -35,8 +35,8 @@
 inline bool do_nonbonded(Particle const &p1, Particle const &p2) {
   /* check for particle 2 in particle 1's exclusion list. The exclusion list is
    * symmetric, so this is sufficient. */
-  return std::none_of(p1.exclusions().begin(), p1.exclusions().end(),
-                      [&p2](int id) { return p2.id() == id; });
+  return std::ranges::none_of(
+      p1.exclusions(), [p2_id = p2.id()](int id) { return id == p2_id; });
 }
 
 /** Remove exclusion from particle if possible */

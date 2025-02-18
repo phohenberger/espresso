@@ -41,6 +41,7 @@ using namespace ScriptInterface;
 struct ObjectMapImpl : ObjectMap<ObjectHandle> {
   using KeyType = int;
   std::unordered_map<KeyType, ObjectRef> mock_core;
+  ~ObjectMapImpl() override { do_destruct(); }
 
 private:
   void do_construct(VariantMap const &params) override {
@@ -55,7 +56,7 @@ private:
     mock_core[key] = obj_ptr;
     return key;
   }
-  void erase_in_core(KeyType const &key) override { mock_core.erase(key); }
+  void erase_in_core(KeyType const &key) final { mock_core.erase(key); }
   KeyType next_key = static_cast<KeyType>(0);
 };
 

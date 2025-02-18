@@ -34,6 +34,7 @@
 #include <utils/Vector.hpp>
 #include <utils/contains.hpp>
 #include <utils/mpi/gather_buffer.hpp>
+#include <utils/mpi/reduce_optional.hpp>
 
 #include <boost/mpi/collectives/all_reduce.hpp>
 
@@ -125,6 +126,14 @@ Variant Analysis::do_call_method(std::string const &name,
     auto const local = system.particle_short_range_energy_contribution(pid);
     return mpi_reduce_sum(context()->get_comm(), local);
   }
+  if (name == "particle_bond_energy") {
+    auto &system = get_system();
+    auto const pid = get_value<int>(parameters, "pid");
+    auto const bond_id = get_value<int>(parameters, "bond_id");
+    auto const partners = get_value<std::vector<int>>(parameters, "partners");
+    auto const local = system.particle_bond_energy(pid, bond_id, partners);
+    return Utils::Mpi::reduce_optional(context()->get_comm(), local);
+  }
 #ifdef DIPOLE_FIELD_TRACKING
   if (name == "calc_long_range_fields") {
     get_system().calculate_long_range_fields();
@@ -138,10 +147,9 @@ Variant Analysis::do_call_method(std::string const &name,
     context()->parallel_try_catch([&]() {
       auto neighbor_pids = get_neighbor_pids(system);
       Utils::Mpi::gather_buffer(neighbor_pids, context()->get_comm());
-      std::for_each(neighbor_pids.begin(), neighbor_pids.end(),
-                    [&dict](NeighborPIDs const &neighbor_pid) {
-                      dict[neighbor_pid.pid] = neighbor_pid.neighbor_pids;
-                    });
+      std::ranges::for_each(neighbor_pids, [&dict](auto const &nbhood) {
+        dict[nbhood.pid] = nbhood.neighbor_pids;
+      });
     });
     return make_unordered_map_of_variants(dict);
   }

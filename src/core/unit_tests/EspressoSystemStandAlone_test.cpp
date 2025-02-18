@@ -43,6 +43,8 @@ namespace utf = boost::unit_test;
 #include "electrostatics/coulomb.hpp"
 #include "electrostatics/p3m.hpp"
 #include "electrostatics/p3m.impl.hpp"
+#include "energy_inline.hpp"
+#include "forces_inline.hpp"
 #include "galilei/Galilei.hpp"
 #include "integrate.hpp"
 #include "integrators/Propagation.hpp"
@@ -57,6 +59,8 @@ namespace utf = boost::unit_test;
 #include "p3m/FFTBuffersLegacy.hpp"
 #include "particle_node.hpp"
 #include "system/System.hpp"
+
+#include <instrumentation/fe_trap.hpp>
 
 #include <utils/Vector.hpp>
 #include <utils/index.hpp>
@@ -75,6 +79,7 @@ namespace utf = boost::unit_test;
 #include <initializer_list>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -94,6 +99,9 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
   auto const comm = boost::mpi::communicator();
   auto const rank = comm.rank();
   auto const n_nodes = comm.size();
+#if defined(FPE)
+  auto const trap = fe_trap::make_unique_scoped();
+#endif
 
   auto const box_l = 12.;
   auto const box_center = box_l / 2.;
@@ -228,6 +236,8 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
 
     // set up P3M
     auto const prefactor = 2.;
+    auto const mesh_range = std::pair<std::optional<int>, std::optional<int>>{
+        std::nullopt, std::nullopt};
     auto p3m = P3MParameters{false,
                              0.0,
                              3.5,
@@ -238,7 +248,7 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
                              1e-3};
     auto solver =
         new_p3m_handle<double, Arch::CPU, FFTBackendLegacy, FFTBuffersLegacy>(
-            std::move(p3m), prefactor, 1, false, true);
+            std::move(p3m), prefactor, 1, false, mesh_range, true);
     add_actor(comm, espresso::system, system.coulomb.impl->solver, solver,
               [&system]() { system.on_coulomb_change(); });
     BOOST_CHECK(not solver->is_gpu());
@@ -297,6 +307,8 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
 
     // set up P3M
     auto const prefactor = 2.;
+    auto const mesh_range = std::pair<std::optional<int>, std::optional<int>>{
+        std::nullopt, std::nullopt};
     auto p3m = P3MParameters{false,
                              0.0,
                              3.5,
@@ -307,7 +319,7 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
                              1e-3};
     auto solver =
         new_dp3m_handle<double, Arch::CPU, FFTBackendLegacy, FFTBuffersLegacy>(
-            std::move(p3m), prefactor, 1, false);
+            std::move(p3m), prefactor, 1, false, mesh_range);
     add_actor(comm, espresso::system, system.dipoles.impl->solver, solver,
               [&system]() { system.on_dipoles_change(); });
     BOOST_CHECK(not solver->is_gpu());
@@ -574,6 +586,38 @@ BOOST_FIXTURE_TEST_CASE(espresso_system_stand_alone, ParticleFactory) {
     } else {
       get_particle_node_parallel(12345);
     }
+    std::vector<Particle> plist(5u);
+    std::vector<Particle *> plist_ptr{};
+    for (auto &p : plist) {
+      plist_ptr.emplace_back(&p);
+    }
+    auto const energy_kernel = [&](std::size_t n) {
+      auto const &box_geo = *system.box_geo;
+      auto const none = NoneBond{};
+      auto const beg = std::begin(plist_ptr);
+      calc_bonded_energy(none, plist[0], {beg, n}, box_geo, nullptr);
+    };
+    auto const force_kernel = [&](std::size_t n) {
+      auto const &box_geo = *system.box_geo;
+      auto const &pl = plist; // alias to improve code coverage
+      auto const none = NoneBond{};
+      if (n == 1u) {
+        calc_bond_pair_force(none, pl[0], pl[1], {}, nullptr);
+      } else if (n == 2u) {
+        calc_bonded_three_body_force(none, box_geo, pl[0], pl[1], pl[2]);
+      } else if (n == 3u) {
+        calc_bonded_four_body_force(none, box_geo, pl[0], pl[1], pl[2], pl[3]);
+      }
+    };
+    static_cast<void>(energy_kernel(0u));
+    BOOST_CHECK_THROW(energy_kernel(1u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(energy_kernel(2u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(energy_kernel(3u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(energy_kernel(4u), BondInvalidSizeError);
+    static_cast<void>(force_kernel(0u));
+    BOOST_CHECK_THROW(force_kernel(1u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(force_kernel(2u), BondUnknownTypeError);
+    BOOST_CHECK_THROW(force_kernel(3u), BondUnknownTypeError);
 #ifdef CUDA
     BOOST_CHECK_THROW(
         invoke_skip_cuda_exceptions([]() { throw std::runtime_error(""); }),

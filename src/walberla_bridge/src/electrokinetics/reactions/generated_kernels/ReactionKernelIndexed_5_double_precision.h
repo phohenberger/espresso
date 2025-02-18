@@ -18,9 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// kernel generated with pystencils v1.3.3, lbmpy v1.3.3,
+// kernel generated with pystencils v1.3.7, lbmpy v1.3.7, sympy v1.12.1,
 // lbmpy_walberla/pystencils_walberla from waLBerla commit
-// b0842e1a493ce19ef1bbb8d2cf382fc343970a7f
+// f36fa0a68bae59f0b516f6587ea8fa7c24a41141
 
 /*
  * Boundary class.
@@ -130,7 +130,7 @@ public:
         order_3_(order_3), order_4_(order_4),
         rate_coefficient_(rate_coefficient), stoech_0_(stoech_0),
         stoech_1_(stoech_1), stoech_2_(stoech_2), stoech_3_(stoech_3),
-        stoech_4_(stoech_4){};
+        stoech_4_(stoech_4) {}
 
   void run(IBlock *block);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 The ESPResSo project
+ * Copyright (C) 2025 The ESPResSo project
  *
  * This file is part of ESPResSo.
  *
@@ -17,18 +17,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Unit test for Utils Type Traits. */
+#pragma once
 
-#define BOOST_TEST_MODULE type traits tests
-#define BOOST_TEST_DYN_LINK
-#include <boost/test/unit_test.hpp>
+// guard for hdf5.h
+#if not defined(_H5public_H)
+#ifdef OMPI_SKIP_MPICXX
+#undef OMPI_SKIP_MPICXX
+#endif
+#ifdef MPICH_SKIP_MPICXX
+#undef MPICH_SKIP_MPICXX
+#endif
+#endif // not defined(_H5public_H)
 
-#include <utils/type_traits.hpp>
-
-#include <climits>
-
-BOOST_AUTO_TEST_CASE(size_in_bits) {
-  static_assert(CHAR_BIT == Utils::size_in_bits<char>::value);
-  static_assert(CHAR_BIT * sizeof(int) == Utils::size_in_bits<int>::value);
-  BOOST_TEST_PASSPOINT();
-}
+#include <H5public.h>

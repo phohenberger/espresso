@@ -23,12 +23,16 @@
 
 #include "lb_kernels.hpp"
 
-#include "generated_kernels/Dynamic_UBB_double_precisionCUDA.h"
-#include "generated_kernels/Dynamic_UBB_single_precisionCUDA.h"
+#include "generated_kernels/DynamicUBBDoublePrecisionCUDA.h"
+#include "generated_kernels/DynamicUBBSinglePrecisionCUDA.h"
 #include "generated_kernels/FieldAccessorsDoublePrecisionCUDA.cuh"
 #include "generated_kernels/FieldAccessorsSinglePrecisionCUDA.cuh"
 #include "generated_kernels/InitialPDFsSetterDoublePrecisionCUDA.h"
 #include "generated_kernels/InitialPDFsSetterSinglePrecisionCUDA.h"
+#include "generated_kernels/PackInfoPdfDoublePrecisionCUDA.h"
+#include "generated_kernels/PackInfoPdfSinglePrecisionCUDA.h"
+#include "generated_kernels/PackInfoVecDoublePrecisionCUDA.h"
+#include "generated_kernels/PackInfoVecSinglePrecisionCUDA.h"
 #include "generated_kernels/StreamSweepDoublePrecisionCUDA.h"
 #include "generated_kernels/StreamSweepSinglePrecisionCUDA.h"
 
@@ -49,6 +53,8 @@ template <> struct KernelTrait<double, Arch::GPU> {
       pystencils::CollideSweepDoublePrecisionLeesEdwardsCUDA;
   using StreamSweep = pystencils::StreamSweepDoublePrecisionCUDA;
   using InitialPDFsSetter = pystencils::InitialPDFsSetterDoublePrecisionCUDA;
+  using PackInfoPdf = pystencils::PackInfoPdfDoublePrecisionCUDA;
+  using PackInfoVec = pystencils::PackInfoVecDoublePrecisionCUDA;
 };
 
 template <> struct KernelTrait<float, Arch::GPU> {
@@ -58,14 +64,16 @@ template <> struct KernelTrait<float, Arch::GPU> {
       pystencils::CollideSweepSinglePrecisionLeesEdwardsCUDA;
   using StreamSweep = pystencils::StreamSweepSinglePrecisionCUDA;
   using InitialPDFsSetter = pystencils::InitialPDFsSetterSinglePrecisionCUDA;
+  using PackInfoPdf = pystencils::PackInfoPdfSinglePrecisionCUDA;
+  using PackInfoVec = pystencils::PackInfoVecSinglePrecisionCUDA;
 };
 
 template <> struct BoundaryHandlingTrait<double, Arch::GPU> {
-  using Dynamic_UBB = lbm::Dynamic_UBB_double_precisionCUDA;
+  using DynamicUBB = lbm::DynamicUBBDoublePrecisionCUDA;
 };
 
 template <> struct BoundaryHandlingTrait<float, Arch::GPU> {
-  using Dynamic_UBB = lbm::Dynamic_UBB_single_precisionCUDA;
+  using DynamicUBB = lbm::DynamicUBBSinglePrecisionCUDA;
 };
 
 } // namespace detail

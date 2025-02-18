@@ -76,7 +76,7 @@ private:
     for (auto const &kv : get_obs_map()) {
       names.emplace_back(kv.first);
     }
-    std::sort(names.begin(), names.end());
+    std::ranges::sort(names);
     return names;
   }
 

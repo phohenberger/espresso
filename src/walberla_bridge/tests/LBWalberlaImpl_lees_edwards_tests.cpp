@@ -45,7 +45,6 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
-#include <math.h>
 #include <memory>
 #include <vector>
 
@@ -71,8 +70,8 @@ BOOST_AUTO_TEST_CASE(test_transient_shear) {
   using LBImplementation = walberla::LBWalberlaImpl<double, lbmpy::Arch::CPU>;
   double density = 1;
   double viscosity = 1. / 7.;
-  auto lattice =
-      std::make_shared<LatticeWalberla>(Vector3i{8, 64, 8}, mpi_shape, 1);
+  auto lattice = std::make_shared<LatticeWalberla>(Vector3i{8, 64, 8},
+                                                   mpi_shape, mpi_shape, 1);
   auto lb = LBImplementation(lattice, viscosity, density);
   auto le_pack = std::make_unique<LeesEdwardsPack>(
       0u, 1u, []() { return 0.0; }, [=]() { return v0; });
@@ -96,8 +95,8 @@ static auto setup_lb_with_offset(double offset) {
   using LBImplementation = walberla::LBWalberlaImpl<double, lbmpy::Arch::CPU>;
   auto density = 1.;
   auto viscosity = 1. / 7.;
-  auto lattice =
-      std::make_shared<LatticeWalberla>(Vector3i{10, 10, 10}, mpi_shape, 1);
+  auto lattice = std::make_shared<LatticeWalberla>(Vector3i{10, 10, 10},
+                                                   mpi_shape, mpi_shape, 1);
   auto lb = std::make_shared<LBImplementation>(lattice, viscosity, density);
   auto le_pack = std::make_unique<LeesEdwardsPack>(
       0u, 1u, [=]() { return offset; }, []() { return 0.0; });
@@ -123,6 +122,16 @@ BOOST_AUTO_TEST_CASE(test_interpolation_force) {
   auto const ghost_node = Vector3i{force_node[0] - offset, -1, force_node[2]};
   auto const laf = *(lb->get_node_last_applied_force(ghost_node, true));
   BOOST_CHECK_SMALL((laf - f1).norm(), 1E-10);
+
+  // check setter
+  auto const f = Vector3d{{0.1, 0.2, -0.3}};
+  lb->set_node_last_applied_force(force_node, f);
+
+  lb->ghost_communication_laf();
+  lb->ghost_communication_vel();
+
+  auto const ghost_laf = *(lb->get_node_last_applied_force(ghost_node, true));
+  BOOST_CHECK_SMALL((ghost_laf - f).norm(), 1E-10);
 }
 
 BOOST_AUTO_TEST_CASE(test_interpolation_velocity) {
@@ -136,7 +145,8 @@ BOOST_AUTO_TEST_CASE(test_interpolation_velocity) {
   auto const v = Vector3d{0.3, -0.2, 0.3};
   lb->set_node_velocity(source_node, v);
 
-  lb->ghost_communication();
+  lb->ghost_communication_pdf();
+  lb->ghost_communication_vel();
 
   auto const ghost_node = Vector3i{source_node[0] - offset, -1, source_node[2]};
   auto const ghost_vel = *(lb->get_node_velocity(ghost_node, true));
@@ -154,12 +164,12 @@ BOOST_AUTO_TEST_CASE(test_interpolation_pdf) {
 
   std::vector<double> source_pop(19);
   auto x = -1.;
-  std::for_each(source_pop.begin(), source_pop.end(), [&x](auto &v) {
+  std::ranges::for_each(source_pop, [&x](auto &v) {
     v = x;
     x += .1;
   });
   lb->set_node_population(source_node, source_pop);
-  lb->ghost_communication();
+  lb->ghost_communication_pdf();
 
   auto const ghost_node = Vector3i{source_node[0] - offset, -1, source_node[2]};
   auto const ghost_pop = *(lb->get_node_population(ghost_node, true));

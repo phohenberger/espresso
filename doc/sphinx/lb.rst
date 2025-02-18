@@ -214,7 +214,8 @@ will be used instead of the default ones.
 
 .. note::
 
-    At the moment, LB only supports the case ``shear_plane_normal="y"``.
+    At the moment, LB only supports the case ``shear_plane_normal="y"`` and
+    doesn't allow domain decomposition along the shear and normal directions.
 
 .. _Reading and setting properties of single lattice nodes:
 
@@ -397,6 +398,39 @@ of the first LB GPU instance::
 
     system.cuda_init_handle.call_method("set_device_id_per_rank")
 
+Due to padding, the memory footprint of the GPU fields is not a linear function
+of the grid size. Instead, it is a step function of the size along the x-direction
+of the rank-local LB domain.
+For illustration, a local LB domain with dimensions 64x256x256 will take as
+much VRAM as a domain with size 127x256x256 in single-precision mode.
+As a rule of thumb, the VRAM in GiB per rank-local LB domain will be:
+
+.. math::
+
+   \label{eq:lj}
+     f(n_x, n_y, n_z) =
+       \begin{cases}
+         \left\lceil n_x / 64 \right\rceil \cdot 64 \cdot n_y \cdot n_z \cdot 204 / 1024^3
+         & \text{(in single-precision)}\\
+         \left\lceil n_x / 32 \right\rceil \cdot 32 \cdot n_y \cdot n_z \cdot 410 / 1024^3
+         & \text{(in double-precision)}
+       \end{cases}
+
+with :math:`n_x`, :math:`n_y`, :math:`n_z` the LB domain size in agrid units, including the ghost layer.
+
+Regarding communication between GPUs, for optimal performance the MPI topology
+should divide the z-direction first, the y-direction second, and the x-direction
+last, i.e. ascending order of the prime factors. Please note the default MPI
+Cartesian grid in |es| is sorted in descending order of the prime factors,
+and leads to poor performance. For illustration, a Cartesian grid with
+shape ``[1, 1, 8]`` yields 94% weak scaling efficiency,
+shape ``[8, 1, 1]`` yields 90%,
+shape ``[1, 2, 4]`` yields 88%,
+shape ``[4, 2, 1]`` yields 86%,
+shape ``[2, 2, 2]`` yields 81%.
+This is assuming 1 GPU per CPU. Using more than 1 CPU per GPU or more
+than 1 GPU per CPU can degrade weak scaling efficiency further.
+
 .. _Electrohydrodynamics:
 
 Electrohydrodynamics
@@ -499,7 +533,7 @@ Start by installing the code generator dependencies:
 
 .. code-block:: bash
 
-    python3 -m pip install --user -c requirements.txt numpy sympy lbmpy pystencils islpy
+    python3 -m pip install -c requirements.txt numpy sympy lbmpy pystencils islpy
 
 Next, edit the code generator script to configure new kernels, then execute it:
 

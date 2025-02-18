@@ -39,7 +39,7 @@ private:
 
 public:
   bool contains(std::shared_ptr<EKReaction> const &ek_reaction) const noexcept {
-    return std::find(begin(), end(), ek_reaction) != end();
+    return std::ranges::find(*this, ek_reaction) != end();
   }
   void add(std::shared_ptr<EKReaction> const &ek_reaction) {
     assert(not contains(ek_reaction));

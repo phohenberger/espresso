@@ -42,19 +42,24 @@ using Constraints_t =
 
 class Constraints : public Constraints_t {
   using Base = Constraints_t;
+  using value_type = typename Base::value_type;
+
   std::shared_ptr<::Constraints::Constraints> m_handle;
   std::unique_ptr<VariantMap> m_params;
 
-  bool has_in_core(std::shared_ptr<Constraint> const &obj_ptr) const override {
+  bool has_in_core(value_type const &obj_ptr) const override {
     return m_handle->contains(obj_ptr->constraint());
   }
-  void add_in_core(std::shared_ptr<Constraint> const &obj_ptr) override {
+  void add_in_core(value_type const &obj_ptr) override {
     m_handle->add(obj_ptr->constraint());
     obj_ptr->bind_system(m_system.lock());
   }
-  void remove_in_core(std::shared_ptr<Constraint> const &obj_ptr) override {
+  void remove_in_core(value_type const &obj_ptr) final {
     m_handle->remove(obj_ptr->constraint());
   }
+
+public:
+  ~Constraints() override { do_destruct(); }
 
   void do_construct(VariantMap const &params) override {
     m_handle = std::make_shared<::Constraints::Constraints>();
@@ -62,6 +67,7 @@ class Constraints : public Constraints_t {
     m_params = std::make_unique<VariantMap>(params);
   }
 
+private:
   void on_bind_system(::System::System &system) override {
     m_handle = system.constraints;
     m_handle->bind_system(m_system.lock());

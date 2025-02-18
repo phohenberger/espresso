@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SRC_UTILS_INCLUDE_UTILS_ARRAY_HPP
-#define SRC_UTILS_INCLUDE_UTILS_ARRAY_HPP
+
+#pragma once
 
 /**
  * @file
@@ -36,6 +36,7 @@
 #include <iterator>
 #include <ostream>
 #include <stdexcept>
+#include <utility>
 
 namespace Utils {
 namespace detail {
@@ -68,6 +69,16 @@ struct ArrayFormatter {
   }
 };
 
+/**
+ * @brief Alias to create prvalue C-style arrays.
+ *
+ * This type is necessary when converting arrays from one type to another type
+ * within functions marked as @c noexcept. The @c std::initializer_list<T>
+ * type doesn't include the backing array length as part of the type,
+ * and is therefore not strictly equivalent.
+ */
+template <typename T, std::size_t N> using carray_alias = T const[N];
+
 } // namespace detail
 
 template <typename T, std::size_t N> struct Array {
@@ -97,12 +108,13 @@ template <typename T, std::size_t N> struct Array {
     return m_storage.m_data[i];
   }
 
-  DEVICE_QUALIFIER constexpr reference operator[](size_type i) {
+  DEVICE_QUALIFIER constexpr reference operator[](size_type i) noexcept {
     DEVICE_ASSERT(i < N);
     return m_storage.m_data[i];
   }
 
-  DEVICE_QUALIFIER constexpr const_reference operator[](size_type i) const {
+  DEVICE_QUALIFIER constexpr const_reference
+  operator[](size_type i) const noexcept {
     DEVICE_ASSERT(i < N);
     return m_storage.m_data[i];
   }
@@ -203,19 +215,28 @@ private:
 };
 
 template <std::size_t I, class T, std::size_t N>
-struct tuple_element<I, Array<T, N>> {
-  using type = T;
-};
-
-template <class T, std::size_t N>
-struct tuple_size<Array<T, N>> : std::integral_constant<std::size_t, N> {};
+typename std::tuple_element<I, Array<T, N>>::type &
+get(Array<T, N> &a) noexcept {
+  return a[I];
+}
 
 template <std::size_t I, class T, std::size_t N>
-auto get(Array<T, N> const &a) -> std::enable_if_t<(I < N), const T &> {
+const typename std::tuple_element<I, Array<T, N>>::type &
+get(Array<T, N> const &a) noexcept {
   return a[I];
 }
 
 } // namespace Utils
+
+template <std::size_t I, class T, std::size_t N>
+struct std::tuple_element<I, Utils::Array<T, N>> {
+  static_assert(I < N, "Utils::Array index must be in range");
+  using type = typename std::enable_if_t<(I < N), T>;
+};
+
+template <class T, std::size_t N>
+struct std::tuple_size<Utils::Array<T, N>>
+    : std::integral_constant<std::size_t, N> {};
 
 UTILS_ARRAY_BOOST_MPI_T(Utils::detail::Storage, N)
 UTILS_ARRAY_BOOST_BIT_S(Utils::detail::Storage, N)
@@ -225,5 +246,3 @@ UTILS_ARRAY_BOOST_MPI_T(Utils::Array, N)
 UTILS_ARRAY_BOOST_BIT_S(Utils::Array, N)
 UTILS_ARRAY_BOOST_CLASS(Utils::Array, N, object_serializable)
 UTILS_ARRAY_BOOST_TRACK(Utils::Array, N, track_never)
-
-#endif

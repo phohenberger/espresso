@@ -17,14 +17,12 @@
 //! \\author pystencils
 //======================================================================================================================
 
-// kernel generated with pystencils v1.3.3, lbmpy v1.3.3, lbmpy_walberla/pystencils_walberla from waLBerla commit b0842e1a493ce19ef1bbb8d2cf382fc343970a7f
+// kernel generated with pystencils v1.3.7, lbmpy v1.3.7, sympy v1.12.1, lbmpy_walberla/pystencils_walberla from waLBerla commit f36fa0a68bae59f0b516f6587ea8fa7c24a41141
 
 #include "PackInfoVecSinglePrecision.h"
 #include "core/DataTypes.h"
 #include "core/cell/CellInterval.h"
 #include "stencil/Directions.h"
-
-#include <cstddef>
 
 #if (defined WALBERLA_CXX_COMPILER_IS_GNU) || (defined WALBERLA_CXX_COMPILER_IS_CLANG)
 #pragma GCC diagnostic push
@@ -69,7 +67,6 @@ static FUNC_PREFIX void unpack_SW_BW_W_TW_NW_BS_S_TS_B_C_T_BN_N_TN_SE_BE_E_TE_NE
 } // namespace internal_1ccccad4ca561e07a0934cadb07d0fc1
 
 void PackInfoVecSinglePrecision::pack(Direction dir, unsigned char *byte_buffer, IBlock *block) const {
-  byte_buffer += sizeof(float) - (reinterpret_cast<std::size_t>(byte_buffer) - (reinterpret_cast<std::size_t>(byte_buffer) / sizeof(float)) * sizeof(float));
   float *buffer = reinterpret_cast<float *>(byte_buffer);
 
   auto field = block->getData<field::GhostLayerField<float, 3>>(fieldID);
@@ -122,7 +119,6 @@ void PackInfoVecSinglePrecision::pack(Direction dir, unsigned char *byte_buffer,
 }
 
 void PackInfoVecSinglePrecision::unpack(Direction dir, unsigned char *byte_buffer, IBlock *block) const {
-  byte_buffer += sizeof(float) - (reinterpret_cast<std::size_t>(byte_buffer) - (reinterpret_cast<std::size_t>(byte_buffer) / sizeof(float)) * sizeof(float));
   float *buffer = reinterpret_cast<float *>(byte_buffer);
 
   auto field = block->getData<field::GhostLayerField<float, 3>>(fieldID);
@@ -181,7 +177,7 @@ uint_t PackInfoVecSinglePrecision::size(stencil::Direction dir, const IBlock *bl
   CellInterval ci;
   field->getGhostRegion(dir, ci, 1, false);
 
-  uint_t elementsPerCell = 0;
+  uint_t elementsPerCell = uint_t{0u};
 
   switch (dir) {
   case stencil::SW:
@@ -203,11 +199,11 @@ uint_t PackInfoVecSinglePrecision::size(stencil::Direction dir, const IBlock *bl
   case stencil::E:
   case stencil::TE:
   case stencil::NE:
-    elementsPerCell = 3;
+    elementsPerCell = uint_t{3u};
     break;
 
   default:
-    elementsPerCell = 0;
+    elementsPerCell = uint_t{0u};
   }
   return ci.numCells() * elementsPerCell * sizeof(float);
 }

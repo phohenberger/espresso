@@ -83,7 +83,8 @@ static auto make_ek_actor() {
   auto constexpr n_ghost_layers = 1u;
   auto constexpr single_precision = true;
   ek_lattice = std::make_shared<LatticeWalberla>(
-      params.grid_dimensions, ::communicator.node_grid, n_ghost_layers);
+      params.grid_dimensions, ::communicator.node_grid,
+      ::communicator.node_grid, n_ghost_layers);
   ek_container = std::make_shared<EK::EKWalberla::ek_container_type>(
       params.tau, walberla::new_ek_poisson_none(ek_lattice, single_precision));
   ek_reactions = std::make_shared<EK::EKWalberla::ek_reactions_type>();
@@ -150,6 +151,7 @@ BOOST_AUTO_TEST_CASE(ek_interface_walberla) {
         espresso::ek_lattice, params.diffusion, params.kT, params.valency,
         params.ext_efield, params.density, false, false, single_precision,
         false, 0u);
+    ek_species->ghost_communication();
     auto ek_reactant = std::make_shared<EKReactant>(ek_species, stoich, order);
     auto ek_reaction = std::make_shared<walberla::EKReactionImpl>(
         espresso::ek_lattice,

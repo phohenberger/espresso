@@ -174,7 +174,7 @@ void ClusterStructure::merge_clusters() {
 
   // Sort particles ids in the clusters
   for (const auto &c : clusters) {
-    std::sort(c.second->particles.begin(), c.second->particles.end());
+    std::ranges::sort(c.second->particles);
   }
 }
 

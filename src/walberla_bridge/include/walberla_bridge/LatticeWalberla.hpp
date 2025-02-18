@@ -21,9 +21,6 @@
 
 #include <utils/Vector.hpp>
 
-#include <cassert>
-#include <cmath>
-#include <initializer_list>
 #include <memory>
 #include <utility>
 
@@ -42,6 +39,7 @@ public:
 
 private:
   Utils::Vector3i m_grid_dimensions;
+  Utils::Vector3i m_node_grid;
   unsigned int m_n_ghost_layers;
 
   /** Block forest */
@@ -52,33 +50,26 @@ private:
 public:
   LatticeWalberla(Utils::Vector3i const &grid_dimensions,
                   Utils::Vector3i const &node_grid,
+                  Utils::Vector3i const &block_grid,
                   unsigned int n_ghost_layers);
 
   // Grid, domain, halo
   [[nodiscard]] auto get_ghost_layers() const { return m_n_ghost_layers; }
-  [[nodiscard]] auto get_grid_dimensions() const { return m_grid_dimensions; }
+  [[nodiscard]] auto const &get_grid_dimensions() const {
+    return m_grid_dimensions;
+  }
+  [[nodiscard]] auto const &get_node_grid() const { return m_node_grid; }
   [[nodiscard]] auto get_blocks() const { return m_blocks; }
   [[nodiscard]] auto const &get_cached_blocks() const {
     return m_cached_blocks;
   }
   [[nodiscard]] std::pair<Utils::Vector3d, Utils::Vector3d>
   get_local_domain() const;
-  [[nodiscard]] auto get_local_grid_range() const {
-    auto const conversion = [](Utils::Vector3d const &pos) -> Utils::Vector3i {
-      auto const dim =
-          Utils::Vector3i{{static_cast<int>(pos[0]), static_cast<int>(pos[1]),
-                           static_cast<int>(pos[2])}};
-#ifndef NDEBUG
-      for (auto const i : {0u, 1u, 2u}) {
-        assert(std::abs(static_cast<double>(dim[i]) - pos[i]) < 1e-10);
-      }
-#endif
-      return dim;
-    };
-    auto const [lower_corner, upper_corner] = get_local_domain();
-    return std::make_pair(conversion(lower_corner), conversion(upper_corner));
-  }
+  [[nodiscard]] std::pair<Utils::Vector3i, Utils::Vector3i>
+  get_local_grid_range() const;
 
+  [[nodiscard]] Utils::Vector3i get_block_corner(IBlock const &block,
+                                                 bool lower) const;
   [[nodiscard]] bool node_in_local_domain(Utils::Vector3i const &node) const;
   [[nodiscard]] bool node_in_local_halo(Utils::Vector3i const &node) const;
   [[nodiscard]] bool pos_in_local_domain(Utils::Vector3d const &pos) const;

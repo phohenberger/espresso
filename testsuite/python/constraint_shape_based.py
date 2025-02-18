@@ -43,6 +43,7 @@ class ShapeBasedConstraintTest(ut.TestCase):
     def tearDown(self):
         self.system.part.clear()
         self.system.constraints.clear()
+        self.system.non_bonded_inter.reset()
 
     def pos_on_surface(self, theta, v, semiaxis0, semiaxis1,
                        semiaxis2, center=np.array([15, 15, 15])):
@@ -386,8 +387,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
                     system.integrator.run(recalc_forces=True, steps=0)
                     energy = system.analysis.energy()
                     self.assertAlmostEqual(energy["total"], r - 1.)
-        # Reset the interaction to zero
-        system.non_bonded_inter[0, 1].generic_lennard_jones.deactivate()
 
     def test_cylinder(self):
         """Tests if shape based constraints can be added to a system both by
@@ -427,7 +426,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * outer_cylinder_wall.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -446,7 +444,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
             outer_cylinder_wall.total_normal_force(),
             2 *
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -510,10 +507,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         cylinder_shape_finite.open = True
         self.assertTrue(cylinder_shape_finite.open)
 
-        # Reset
-        system.non_bonded_inter[0, 1].lennard_jones.set_params(
-            epsilon=0.0, sigma=0.0, cutoff=0.0, shift=0)
-
     def test_spherocylinder(self):
         """Checks that spherocylinder constraints with LJ interactions exert
         forces on a test particle (that is, the constraints do what they should)
@@ -550,7 +543,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * outer_cylinder_constraint.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -568,14 +560,13 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(outer_cylinder_constraint.total_force()[2], 0.0)
         self.assertAlmostEqual(outer_cylinder_constraint.total_normal_force(),
                                2 * tests_common.lj_force(
-                                   espressomd, cutoff=2.0, offset=0.,
-                                   epsilon=1.0, sigma=1.0, r=dist_part2))
+                                   cutoff=2.0, offset=0., epsilon=1.0,
+                                   sigma=1.0, r=dist_part2))
 
         # Reset
         system.part.clear()
         system.constraints.clear()
-        system.non_bonded_inter[0, 1].lennard_jones.set_params(
-            epsilon=0.0, sigma=0.0, cutoff=0.0, shift=0)
+        system.non_bonded_inter.reset()
 
         # (2) finite spherocylinder
         system.part.clear()
@@ -631,10 +622,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         np.testing.assert_almost_equal(
             np.copy(spherocylinder_shape.center), 3 * [self.box_l / 2.0])
 
-        # Reset
-        system.non_bonded_inter[0, 1].generic_lennard_jones.set_params(
-            epsilon=0., sigma=0., cutoff=0., shift=0., offset=0., e1=0, e2=0, b1=0., b2=0.)
-
     def test_wall_forces(self):
         """Tests if shape based constraints can be added to a system both by
         (1) defining a constraint object which is then added
@@ -672,7 +659,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             p.f[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -682,7 +668,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             p.f[2],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.5,
@@ -694,7 +679,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * wall_xz.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -704,7 +688,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -1.0 * wall_xy.total_force()[2],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.5,
@@ -716,7 +699,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             wall_xy.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.5,
@@ -730,11 +712,10 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(wall_xz.min_dist(), p1.pos[1])
         self.assertAlmostEqual(wall_xy.min_dist(), p1.pos[2])
 
-        # Reset
-        system.non_bonded_inter[0, 1].lennard_jones.set_params(
-            epsilon=0.0, sigma=0.0, cutoff=0.0, shift=0)
-        system.non_bonded_inter[0, 2].lennard_jones.set_params(
-            epsilon=0.0, sigma=0.0, cutoff=0.0, shift=0)
+        # check distance without non-bonded potential
+        system.non_bonded_inter.reset()
+        self.assertEqual(wall_xz.min_dist(), np.inf)
+        self.assertEqual(wall_xy.min_dist(), np.inf)
 
     def test_slitpore(self):
         """Checks that slitpore constraints with LJ interactions exert forces
@@ -790,10 +771,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
             np.testing.assert_almost_equal(
                 np.copy(slitpore_constraint.total_force()), ref_force, 10)
 
-        # Reset
-        system.non_bonded_inter[0, 1].generic_lennard_jones.set_params(
-            epsilon=0., sigma=0., cutoff=0., shift=0., offset=0., e1=0, e2=0, b1=0., b2=0.)
-
     def test_rhomboid(self):
         """Checks that rhomboid constraints with LJ interactions exert forces
         on a test particle (that is, the constraints do what they should)
@@ -833,7 +810,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             -p.f[2],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -843,7 +819,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             rhomboid_constraint.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -933,7 +908,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             rhomboid_constraint.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
@@ -948,17 +922,12 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             rhomboid_constraint.total_normal_force(),
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.,
                 offset=0.,
                 epsilon=1.,
                 sigma=1.,
                 r=1.2247448714),
             places=10)
-
-        # Reset
-        system.non_bonded_inter[0, 1].lennard_jones.set_params(
-            epsilon=0.0, sigma=0.0, cutoff=0.0, shift=0)
 
     def test_torus(self):
         """Checks that torus constraints with LJ interactions exert forces
@@ -999,7 +968,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         self.assertAlmostEqual(
             torus_wall.total_force()[1],
             tests_common.lj_force(
-                espressomd,
                 cutoff=2.0,
                 offset=0.,
                 epsilon=1.0,
@@ -1015,7 +983,7 @@ class ShapeBasedConstraintTest(ut.TestCase):
 
         self.assertAlmostEqual(torus_wall.total_force()[1], 0.0)
         self.assertAlmostEqual(torus_wall.total_normal_force(), 2 * tests_common.lj_force(
-            espressomd, cutoff=2.0, offset=0., epsilon=1.0, sigma=1.0,
+            cutoff=2.0, offset=0., epsilon=1.0, sigma=1.0,
             r=radius - tube_radius - part_offset))
 
         # Test the geometry of the shape directly
@@ -1066,10 +1034,6 @@ class ShapeBasedConstraintTest(ut.TestCase):
         np.testing.assert_almost_equal(np.copy(torus_shape.normal), [0, 0, 1])
         np.testing.assert_almost_equal(
             np.copy(torus_shape.center), 3 * [self.box_l / 2.0])
-
-        # Reset
-        system.non_bonded_inter[0, 1].lennard_jones.set_params(
-            epsilon=0.0, sigma=0.0, cutoff=0.0, shift=0)
 
     def test_exceptions(self):
         system = self.system

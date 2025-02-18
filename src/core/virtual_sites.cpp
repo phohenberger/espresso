@@ -37,6 +37,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <source_location>
 #include <tuple>
 
 std::tuple<Utils::Quaternion<double>, double>
@@ -102,11 +103,13 @@ calculate_vs_relate_to_params(Particle const &p_vs, Particle const &p_relate_to,
   quat /= relate_to_quat.norm2();
 
   // Verify result
+  constexpr auto const location = std::source_location::current();
+  constexpr auto const *function_name = location.function_name();
+  constexpr auto *error_msg = "%s: component %u: %f instead of %f\n";
   Utils::Quaternion<double> qtemp = relate_to_quat * quat;
   for (unsigned int i = 0; i < 4; i++) {
-    if (fabs(qtemp[i] - quat_director[i]) > 1E-9) {
-      fprintf(stderr, "vs_relate_to: component %u: %f instead of %f\n", i,
-              qtemp[i], quat_director[i]);
+    if (fabs(qtemp[i] - quat_director[i]) != 0.) {
+      fprintf(stderr, error_msg, function_name, i, qtemp[i], quat_director[i]);
     }
   }
   return std::make_tuple(quat, dist);

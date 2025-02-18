@@ -76,7 +76,6 @@ class LBCouetteFlowCommon:
     def check_profile(self, u_getter, **kwargs):
         system = self.system
         # carefully select the domain decomposition
-        assert self.n_nodes == 1 or kwargs["shear_plane_normal"] == "y"
         system.box_l = [16, 16, 16]
         if "x" not in kwargs.values():
             system.cell_system.node_grid = [1, self.n_nodes, 1]
@@ -111,18 +110,24 @@ class LBCouetteFlowCommon:
             np.testing.assert_allclose(u_lbf, u_ref, atol=1e-4, rtol=0.)
 
     def test_profile_xy(self):
-        self.check_profile(lambda lbf: lbf[5, :, 0].velocity[:, 0],
-                           shear_direction="x", shear_plane_normal="y")
+        if "blocks_per_mpi_rank" in self.lb_params:
+            assert self.lb_params["blocks_per_mpi_rank"][0] != 1
+            with self.assertRaises(ValueError):
+                self.check_profile(lambda lbf: lbf[5, :, 0].velocity[:, 0],
+                                   shear_direction="x", shear_plane_normal="y")
+        else:
+            self.check_profile(lambda lbf: lbf[5, :, 0].velocity[:, 0],
+                               shear_direction="x", shear_plane_normal="y")
 
-    @ut.skipIf(n_nodes > 1, "Skipping test: only runs for n_nodes == 1")
     def test_profile_zy(self):
+        if "blocks_per_mpi_rank" in self.lb_params:
+            self.skipTest("only runs without blocks_per_mpi_rank")
         self.check_profile(lambda lbf: lbf[0, :, 5].velocity[:, 0],
                            shear_direction="z", shear_plane_normal="y")
 
 
 @utx.skipIfMissingFeatures(["WALBERLA"])
-@ut.skipIf(LBCouetteFlowCommon.n_nodes > 2,
-           "Skipping test: only runs for n_nodes <= 2")
+@ut.skipIf(LBCouetteFlowCommon.n_nodes != 1, "only runs for 1 MPI rank")
 class LBCouetteFlowWalberla(LBCouetteFlowCommon, ut.TestCase):
 
     """Test for the Walberla implementation of the LB in double-precision."""
@@ -132,14 +137,24 @@ class LBCouetteFlowWalberla(LBCouetteFlowCommon, ut.TestCase):
 
 
 @utx.skipIfMissingFeatures(["WALBERLA"])
-@ut.skipIf(LBCouetteFlowCommon.n_nodes > 2,
-           "Skipping test: only runs for n_nodes <= 2")
+@ut.skipIf(LBCouetteFlowCommon.n_nodes != 1, "only runs for 1 MPI rank")
 class LBCouetteFlowWalberlaSinglePrecision(LBCouetteFlowCommon, ut.TestCase):
 
     """Test for the Walberla implementation of the LB in single-precision."""
 
     lb_class = espressomd.lb.LBFluidWalberla
     lb_params = {"single_precision": True}
+
+
+@utx.skipIfMissingFeatures(["WALBERLA"])
+@ut.skipIf(LBCouetteFlowCommon.n_nodes != 1, "only runs for 1 MPI rank")
+class LBCouetteFlowWalberlaBlocks(LBCouetteFlowCommon, ut.TestCase):
+
+    """Test for the Walberla implementation of the LB in double-precision."""
+
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False,
+                 "blocks_per_mpi_rank": [2, 1, 1]}
 
 
 if __name__ == '__main__':

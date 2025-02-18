@@ -111,5 +111,11 @@ class LBBoundaryForceWalberlaSinglePrecision(
     lb_params = {"single_precision": True}
 
 
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBBoundaryForceWalberlaBlocks(LBBoundaryForceCommon, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [2, 2, 2]}
+
+
 if __name__ == '__main__':
     ut.main()

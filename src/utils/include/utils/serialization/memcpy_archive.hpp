@@ -66,10 +66,12 @@ template <class Derived> class BasicMemcpyArchive {
   /** Current position in the buffer */
   char *insert;
 
-public:
+protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
   explicit BasicMemcpyArchive(std::span<char> buf)
       : buf(buf), insert(buf.data()) {}
 
+public:
   auto get_library_version() const { return std::size_t{4}; }
 
   auto bytes_processed() const {
@@ -121,14 +123,14 @@ private:
 
 public:
   template <class T>
-  auto
-  operator>>(T &value) -> std::enable_if_t<detail::use_serialize<T>::value> {
+  auto operator>>(T &value)
+      -> std::enable_if_t<detail::use_serialize<T>::value> {
     process(value);
   }
 
   template <class T>
-  auto
-  operator<<(T &value) -> std::enable_if_t<detail::use_serialize<T>::value> {
+  auto operator<<(T &value)
+      -> std::enable_if_t<detail::use_serialize<T>::value> {
     process(value);
   }
 

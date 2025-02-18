@@ -66,8 +66,7 @@ BOOST_AUTO_TEST_CASE(completeness) {
   }
 
   /* Every particle should be visited exactly once. */
-  BOOST_CHECK(
-      std::all_of(counts.begin(), counts.end(), [](int i) { return i == 1; }));
+  BOOST_CHECK(std::ranges::all_of(counts, [](int i) { return i == 1; }));
 }
 
 BOOST_AUTO_TEST_CASE(skip_empty) {

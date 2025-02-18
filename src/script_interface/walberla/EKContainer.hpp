@@ -48,6 +48,7 @@ namespace ScriptInterface::walberla {
 
 class EKContainer : public ObjectList<EKSpecies> {
   using Base = ObjectList<EKSpecies>;
+  using value_type = typename Base::value_type;
 
   std::variant<
 #ifdef WALBERLA_FFT
@@ -61,14 +62,14 @@ class EKContainer : public ObjectList<EKSpecies> {
   std::shared_ptr<::EK::EKWalberla::ek_container_type> m_ek_container;
   bool m_is_active;
 
-  bool has_in_core(std::shared_ptr<EKSpecies> const &obj_ptr) const override {
+  bool has_in_core(value_type const &obj_ptr) const override {
     return m_ek_container->contains(obj_ptr->get_ekinstance());
   }
-  void add_in_core(std::shared_ptr<EKSpecies> const &obj_ptr) override {
+  void add_in_core(value_type const &obj_ptr) override {
     context()->parallel_try_catch(
         [this, &obj_ptr]() { m_ek_container->add(obj_ptr->get_ekinstance()); });
   }
-  void remove_in_core(std::shared_ptr<EKSpecies> const &obj_ptr) override {
+  void remove_in_core(value_type const &obj_ptr) final {
     m_ek_container->remove(obj_ptr->get_ekinstance());
   }
 
@@ -126,6 +127,8 @@ public:
          [this]() { return m_is_active; }},
     });
   }
+
+  ~EKContainer() override { do_destruct(); }
 
   void do_construct(VariantMap const &params) override {
     m_is_active = false;

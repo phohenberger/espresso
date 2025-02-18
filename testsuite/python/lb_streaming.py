@@ -163,5 +163,14 @@ class LBStreamingWalberlaSinglePrecisionGPU(LBStreamingCommon, ut.TestCase):
     rtol = 1e-5
 
 
+@utx.skipIfMissingFeatures(["WALBERLA"])
+class LBStreamingWalberlaDoublePrecisionBlocksCPU(
+        LBStreamingCommon, ut.TestCase):
+    lb_class = espressomd.lb.LBFluidWalberla
+    lb_params = {"single_precision": False, "blocks_per_mpi_rank": [1, 2, 2]}
+    box_l = [3., 2., 2.]
+    rtol = 1e-10
+
+
 if __name__ == "__main__":
     ut.main()

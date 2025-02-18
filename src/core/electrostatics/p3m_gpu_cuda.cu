@@ -549,8 +549,7 @@ void assign_forces(P3MGpuData const &params,
 void p3m_gpu_init(std::shared_ptr<P3MGpuParams> &data, int cao,
                   Utils::Vector3i const &mesh, double alpha,
                   Utils::Vector3d const &box_l, std::size_t n_part) {
-  if (mesh == Utils::Vector3i::broadcast(-1))
-    throw std::runtime_error("P3M: invalid mesh size");
+  assert(mesh != Utils::Vector3i::broadcast(-1));
 
   if (not data) {
     data = std::make_shared<P3MGpuParams>();
@@ -574,7 +573,7 @@ void p3m_gpu_init(std::shared_ptr<P3MGpuParams> &data, int cao,
   }
 
   if (not data->is_initialized or mesh != Utils::Vector3i(p3m_gpu_data.mesh)) {
-    std::copy(mesh.begin(), mesh.end(), p3m_gpu_data.mesh);
+    std::ranges::copy(mesh, p3m_gpu_data.mesh);
     mesh_changed = true;
     do_reinit = true;
   }
@@ -583,7 +582,7 @@ void p3m_gpu_init(std::shared_ptr<P3MGpuParams> &data, int cao,
           static_cast<double>(std::numeric_limits<float>::epsilon());
       not data->is_initialized or
       (box_l - Utils::Vector3d(p3m_gpu_data.box)).norm() >= eps) {
-    std::copy(box_l.begin(), box_l.end(), p3m_gpu_data.box);
+    std::ranges::copy(box_l, p3m_gpu_data.box);
     do_reinit = true;
   }
 

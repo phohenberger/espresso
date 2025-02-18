@@ -79,11 +79,6 @@ if(NOT CMAKE_CUDA_FLAGS MATCHES "-Wno-unknown-cuda-version")
   set(ESPRESSO_CUDA_TOOLKIT_UNKNOWN_WARN "use '-D CMAKE_CUDA_FLAGS=\"-Wno-unknown-cuda-version\"' to override this check")
   if(ESPRESSO_CLANG_DETECTED_CUDA_VERSION STREQUAL "unknown")
     message(FATAL_ERROR "${CMAKE_CUDA_COMPILER_ID} could not detect the version of the CUDA toolkit library; ${ESPRESSO_CUDA_TOOLKIT_UNKNOWN_WARN}")
-  elseif(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0" AND
-         CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "13.0.0" AND
-         ESPRESSO_CLANG_DETECTED_CUDA_VERSION VERSION_LESS "12.0")
-    message(WARNING "${CMAKE_CUDA_COMPILER_ID} ${CMAKE_CUDA_COMPILER_VERSION} doesn't natively support CUDA ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}; ${ESPRESSO_CUDA_TOOLKIT_UNKNOWN_WARN}.")
-    target_compile_options(espresso_cuda_flags INTERFACE -Wno-unknown-cuda-version)
   endif()
 endif()
 message(STATUS "Found CUDA toolkit installation: ${ESPRESSO_CLANG_DETECTED_CUDA_DIR} (recognized by ${CMAKE_CUDA_COMPILER_ID} as CUDA ${ESPRESSO_CLANG_DETECTED_CUDA_VERSION})")

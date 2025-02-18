@@ -67,7 +67,7 @@ public:
   }
 
   void tuning_goals(double accuracy, double prefactor, double box_l,
-                    int n_particles, double sum_prop) const {
+                    std::size_t n_particles, double sum_prop) const {
     if (m_verbose) {
       std::string particle_trait;
       std::string particle_property;
@@ -82,7 +82,7 @@ public:
         break;
       }
       std::printf("%s tune parameters: Accuracy goal = %.5e prefactor = %.5e\n"
-                  "System: box_l = %.5e # %s part = %d %s = %.5e\n",
+                  "System: box_l = %.5e # %s part = %zu %s = %.5e\n",
                   m_name.c_str(), accuracy, prefactor, box_l,
                   particle_trait.c_str(), n_particles,
                   particle_property.c_str(), sum_prop);

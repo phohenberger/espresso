@@ -168,9 +168,8 @@ get_pairs_of_types(System::System const &system, double const distance,
                    std::vector<int> const &types) {
   detail::search_neighbors_sanity_checks(system, distance);
   return get_pairs_filtered(system, distance, [types](Particle const &p) {
-    return std::any_of(types.begin(), types.end(),
-                       // NOLINTNEXTLINE(bugprone-exception-escape)
-                       [p](int const type) { return p.type() == type; });
+    return std::ranges::any_of(
+        types, [target = p.type()](int const type) { return type == target; });
   });
 }
 
