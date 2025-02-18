@@ -50,7 +50,7 @@ public:
     std::unordered_map<int, int> get_id_to_index() const { return id_to_index; }
 
     ~CabanaData() {
-      std::cout << "Destroying CabanaData" << std::endl;
+      //std::cout << "Destroying CabanaData" << std::endl;
     };
 
 

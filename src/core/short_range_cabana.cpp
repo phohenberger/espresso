@@ -262,13 +262,13 @@ void cabana_short_range(BondKernel bond_kernel,
 
     auto t7 = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
-    std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
-    std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
-    std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
-    std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
-    std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
-    std::cout << "Total: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << std::endl;
+    //std::cout << "Map creation: " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
+    //std::cout << "Time to create particle storage: " << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << " us" << std::endl;
+    //std::cout << "Time to count neighbors: " << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << " us" << std::endl;
+    //std::cout << "Time to fill verlet list: " << std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count() << " us" << std::endl;
+    //std::cout << "Time to execute kernel: " << std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count() << " us" << std::endl;
+    //std::cout << "Time to add forces: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count() << " us" << std::endl;
+    //std::cout << "Total: " << std::chrono::duration_cast<std::chrono::microseconds>(t7 - t1).count() << std::endl;
     
   }
 }
