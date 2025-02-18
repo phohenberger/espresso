@@ -113,7 +113,7 @@ void cabana_short_range(BondKernel bond_kernel,
       }
 
       for (auto const& p : ghost_particles) {
-        if (id_to_index.find(p.id()) == id_to_index.end()) {
+        if (not id_to_index.contains(p.id())) {
           id_to_index[p.id()] = index;
           index++;
         }
@@ -126,11 +126,11 @@ void cabana_short_range(BondKernel bond_kernel,
 
     const int number_of_unique_particles = index;
 
-    std::cout << "Rank: " << rank << std::endl;
-    std::cout << "Rebuild: " << rebuild << std::endl;
-    std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
-    std::cout << "Number of particles: " << particles.size() << std::endl;
-    std::cout << "Number of ghost particles: " << ghost_particles.size() << std::endl;
+    //std::cout << "Rank: " << rank << std::endl;
+    //std::cout << "Rebuild: " << rebuild << std::endl;
+    //std::cout << "Number of unique particles: " << number_of_unique_particles << std::endl;
+    //std::cout << "Number of particles: " << particles.size() << std::endl;
+    //std::cout << "Number of ghost particles: " << ghost_particles.size() << std::endl;
 
     auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -155,16 +155,13 @@ void cabana_short_range(BondKernel bond_kernel,
     for (auto const& p : ghost_particles) {
       // if the ghost is not in the previous map, but mpi moved it to this rank?
       // it will not have neighbors because we did not rebuild the verlet list.
-      if (id_to_index.find(p.id()) == id_to_index.end()) {
+      if (not id_to_index.contains(p.id())) {
         continue;
       }
       write_particle(p, id_to_index, slice_position, slice_force, slice_id, slice_type);
     }
 
     auto t3 = std::chrono::high_resolution_clock::now();
-
-
-
 
     // ===================================================
     // Get Verlet Pairs and Fill list
@@ -194,7 +191,6 @@ void cabana_short_range(BondKernel bond_kernel,
       CabanaData new_data(verlet_list, id_to_index);
       cell_structure.set_cabana_data(std::make_unique<CabanaData>(new_data));
     }
-
 
     // fill customverletlist with pairs
     auto first_neighbor_kernel = KOKKOS_LAMBDA(const int i, const int j) {
@@ -249,23 +245,33 @@ void cabana_short_range(BondKernel bond_kernel,
         
         ParticleForce f(f_vec);
         p.force_and_torque() += f;
-       
     }
 
+    std::unordered_set<int> processed_ids;
+
     for (auto & p : ghost_particles) {
-        // Check if the ghost particle is in the map, i.e. was used during force calculation
-        if (id_to_index.find(p.id()) == id_to_index.end()) {
+        int const pid = p.id();
+        // Check if the particle has already been processed
+        if (processed_ids.find(pid) != processed_ids.end()) {
           continue;
         }
+
+        // Check if the ghost particle is in the map, i.e. was used during force calculation
+        if (id_to_index.find(pid) == id_to_index.end()) {
+          continue;
+        }
+
+        auto const id = id_to_index.at(pid);
 
         // Only add forces to ghost particles that are not as normal particles in the map,
         // as they have already been added to the force calculation
-        if (id_to_index.at(p.id()) < particles.size()) {
+        if (id < particles.size()) {
           continue;
         }
 
-        auto const id = id_to_index.at(p.id());
-        Utils::Vector3d f_vec{slice_force(id,0), slice_force(id, 1), slice_force(id, 2)};
+        processed_ids.insert(pid);
+
+        Utils::Vector3d f_vec{slice_force(id, 0), slice_force(id, 1), slice_force(id, 2)};
         
         ParticleForce f(f_vec);
         p.force_and_torque() += f;
