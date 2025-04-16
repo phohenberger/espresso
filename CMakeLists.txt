@@ -484,7 +484,7 @@ endif()
 
 if(ESPRESSO_BUILD_WITH_CABANA)
   # Find kokkos
-  if(NOT DEFINED ENV{Kokkos_DIR})
+  if(NOT EXISTS $ENV{Kokkos_DIR})
     message(
       FATAL_ERROR
         "Kokkos_DIR not set. Please set it to the directory containing KokkosConfig.cmake (typically the Kokkos build folder)"
