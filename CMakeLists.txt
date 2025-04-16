@@ -121,7 +121,7 @@ FetchContent_Declare(
   cabana
   GIT_REPOSITORY https://github.com/ECP-copa/Cabana.git
   GIT_TAG        7914d28708b1c67b40d5743c1fbc09e221144dd3
-  PATCH_COMMAND  patch -p0 < ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_cabana_doxygen.diff
+  PATCH_COMMAND  patch -p1 < ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_cabana_doxygen.diff
 )
 # cmake-format: on
 
@@ -484,7 +484,7 @@ endif()
 
 if(ESPRESSO_BUILD_WITH_CABANA)
   # Find kokkos
-  if(NOT EXISTS Kokkos_DIR)
+  if(NOT DEFINED ENV{Kokkos_DIR})
     message(
       FATAL_ERROR
         "Kokkos_DIR not set. Please set it to the directory containing KokkosConfig.cmake (typically the Kokkos build folder)"
