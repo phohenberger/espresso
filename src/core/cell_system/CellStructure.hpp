@@ -56,7 +56,9 @@
 #include <any>
 
 // forward declaration to not have to import cabana
+#ifdef SHARED_MEMORY_PARALLELISM
 class CabanaData;
+#endif
 
 template <typename Callable>
 concept ParticleCallback = requires(Callable c, Particle &p) {
@@ -637,7 +639,7 @@ private:
     }
   }
 
-#ifdef CABANA
+#ifdef SHARED_MEMORY_PARALLELISM
 private:
     std::unique_ptr<CabanaData> m_cabana_data;
 

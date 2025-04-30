@@ -33,7 +33,7 @@
 #ifdef SHARED_MEMORY_PARALLELISM
 #include <Cabana_Core.hpp>
 #include <Kokkos_Core.hpp>
-
+#endif
 
 #include <utils/Vector.hpp>
 #include <utils/mpi/cart_comm.hpp>

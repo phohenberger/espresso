@@ -59,7 +59,7 @@
 #include <caliper/cali.h>
 #endif
 
-#ifdef CABANA
+#ifdef SHARED_MEMORY_PARALLELISM
 #include <Cabana_Core.hpp>
 #include "short_range_cabana.cpp"
 #endif
@@ -181,9 +181,7 @@ void System::System::calculate_forces() {
   auto const collision_detection_cutoff = INACTIVE_CUTOFF;
 #endif
 
-  // TODO: Use #ifdef CABANA here
-  // but at the moments its faster for rebuilding to just change this to false
-#ifdef CABANA
+#ifdef SHARED_MEMORY_PARALLELISM
   cabana_short_range(
     [
       coulomb_kernel_ptr = get_ptr(coulomb_kernel), &bonded_ias = *bonded_ias,
@@ -202,7 +200,7 @@ void System::System::calculate_forces() {
     *box_geo,
     *nonbonded_ias,
     particles,
-    ghost_particles,
+    cell_structure->ghost_particles(),
     VerletCriterion<>{*this, cell_structure->get_verlet_skin(),
                       get_interaction_range(), coulomb_cutoff, dipole_cutoff,
                       collision_detection_cutoff}
