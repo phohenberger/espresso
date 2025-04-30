@@ -33,7 +33,7 @@
 #ifdef SHARED_MEMORY_PARALLELISM
 #include <Cabana_Core.hpp>
 #include <Kokkos_Core.hpp>
-#endif
+
 
 #include <utils/Vector.hpp>
 #include <utils/mpi/cart_comm.hpp>
@@ -103,6 +103,7 @@ void deinit() {
 #endif
 }
 } // namespace Communication
+
 
 Communicator::Communicator()
     : comm{::comm_cart}, node_grid{}, this_node{::this_node}, size{-1} {}

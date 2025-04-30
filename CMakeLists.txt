@@ -130,6 +130,8 @@ FetchContent_Declare(
 # User input options
 # ##############################################################################
 
+option(ESPRESSO_BUILD_WITH_CABANA "Build with Cabana" ON)
+
 option(ESPRESSO_BUILD_WITH_PYTHON "Build with Python bindings" ON)
 option(ESPRESSO_BUILD_WITH_GSL "Build with GSL support" OFF)
 option(ESPRESSO_BUILD_WITH_FFTW "Build with FFTW support" ON)
