@@ -51,6 +51,48 @@
 #include <utility>
 #include <vector>
 
+#ifdef SHARED_MEMORY_PARALLELISM
+#include <Cabana_Core.hpp>
+#include "custom_verlet_list.hpp"
+#include "cabana_data.hpp"
+#endif
+
+#ifdef SHARED_MEMORY_PARALLELISM
+
+using data_types = Cabana::MemberTypes<double[3], double[3], int, int>;
+using memory_space = Kokkos::SharedSpace;
+using execution_space = Kokkos::DefaultExecutionSpace;
+
+using ListAlgorithm = Cabana::HalfNeighborTag;
+using ListType = Cabana::CustomVerletList<memory_space, ListAlgorithm, Cabana::VerletLayout2D>;
+
+
+CellStructure::~CellStructure() {
+  m_cabana_data.reset();
+};
+
+void CellStructure::set_cabana_data(std::unique_ptr<CabanaData> data) {
+  m_cabana_data = std::move(data);
+}
+
+CabanaData& CellStructure::get_cabana_data() {
+  return *m_cabana_data;
+}
+
+void CellStructure::create_cabana_data() {
+  m_cabana_data = std::make_unique<CabanaData>();
+}
+
+void CellStructure::save_particles(ParticleRange particles) {
+  m_cabana_data->save_local_particles_to_aosoa(particles);
+}
+
+void CellStructure::read_particles() {
+  m_cabana_data->read_local_particles_from_aosoa();
+}
+
+#endif
+
 CellStructure::CellStructure(BoxGeometry const &box)
     : m_decomposition{std::make_unique<AtomDecomposition>(box)} {}
 
