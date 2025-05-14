@@ -109,6 +109,10 @@ if(ESPRESSO_BUILD_WITH_WALBERLA)
             $<$<BOOL:${ESPRESSO_BUILD_WITH_CUDA}>:espresso::walberla_cuda>)
 endif()
 
+if(ESPRESSO_BUILD_WITH_SHARED_MEMORY_PARALLELISM)
+  target_link_libraries(espresso_core PRIVATE Cabana::Core)
+endif()
+
 if(ESPRESSO_BUILD_WITH_FFTW)
   add_subdirectory(p3m)
   add_subdirectory(fft)

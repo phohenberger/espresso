@@ -29,6 +29,8 @@
 
 #include <cassert>
 
+#include "cabana_data.hpp"
+
 namespace detail {
 /**
  * @brief Functor that returns true for
@@ -49,6 +51,12 @@ void short_range_loop(BondKernel bond_kernel, PairKernel pair_kernel,
   CALI_CXX_MARK_FUNCTION;
 #endif
 
+/*
+  int a = 2;
+  CabanaData new_data(a);
+  cell_structure.set_cabana_data(std::make_unique<CabanaData>(new_data));
+  auto &data = cell_structure.get_cabana_data();
+*/
   assert(cell_structure.get_resort_particles() == Cells::RESORT_NONE);
 
   if (bond_cutoff >= 0.) {
@@ -58,4 +66,8 @@ void short_range_loop(BondKernel bond_kernel, PairKernel pair_kernel,
   if (pair_cutoff > 0.) {
     cell_structure.non_bonded_loop(pair_kernel, verlet_criterion);
   }
+
+  AoSoA &data = cell_structure.get_cabana_data().get_aosoa();
+  auto slice_position = Cabana::slice<0>(data);
+  std::cout << " Short " << slice_position(0,0) << " " << slice_position(0,1) << " " << slice_position(0,2) << std::endl;
 }
