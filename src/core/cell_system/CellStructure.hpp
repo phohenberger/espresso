@@ -57,6 +57,16 @@
 
 using ParticleUnaryOp = std::function<void(Particle &)>;
 
+template <typename Callable>
+concept ParticleCallback = requires(Callable c, Particle &p) {
+  { c(p) } -> std::same_as<void>;
+};
+
+// forward declaration to not have to import cabana
+#ifdef SHARED_MEMORY_PARALLELISM
+class CabanaData;
+#endif
+
 namespace Cells {
 enum Resort : unsigned {
   RESORT_NONE = 0u,
@@ -615,6 +625,20 @@ public:
   void set_hybrid_decomposition(double cutoff_regular,
                                 std::set<int> n_square_types);
 
+#ifdef SHARED_MEMORY_PARALLELISM
+private:
+    std::unique_ptr<CabanaData> m_cabana_data;
+
+public:
+  void set_cabana_data(std::unique_ptr<CabanaData> data);
+  CabanaData& get_cabana_data();
+  void create_cabana_data();
+  void save_particles(ParticleRange particles);
+  void read_particles();
+
+  virtual ~CellStructure();
+#endif
+
 private:
   /**
    * @brief Run link_cell algorithm for local cells.
@@ -627,6 +651,11 @@ private:
     auto const local_cells_span = decomposition().local_cells();
     auto const first = boost::make_indirect_iterator(local_cells_span.begin());
     auto const last = boost::make_indirect_iterator(local_cells_span.end());
+
+    create_cabana_data();
+
+    save_particles(local_particles());
+    read_particles();
 
     if (maybe_box) {
       Algorithm::link_cell(
