@@ -52,6 +52,7 @@
 #include <vector>
 
 #ifdef SHARED_MEMORY_PARALLELISM
+#include <Kokkos_Core.hpp>
 #include <Cabana_Core.hpp>
 #include "custom_verlet_list.hpp"
 #include "cabana_data.hpp"
@@ -90,8 +91,6 @@ void CellStructure::save_particles(ParticleRange particles) {
 void CellStructure::read_particles() {
   m_cabana_data->read_local_particles_from_aosoa();
 }
-
-#endif
 
 CellStructure::CellStructure(BoxGeometry const &box)
     : m_decomposition{std::make_unique<AtomDecomposition>(box)} {}
@@ -369,3 +368,21 @@ void CellStructure::update_ghosts_and_resort_particle(unsigned data_parts) {
     ghosts_update(data_parts & ~resort_only_parts);
   }
 }
+
+#ifdef SHARED_MEMORY_PARALLELISM
+void CellStructure::parallel_for_each_particle_impl(
+    std::span<Cell *const> cells, ParticleUnaryOp &f) const {
+  if (cells.size() > 1) {
+    Kokkos::parallel_for( // loop over cells
+        "for_each_local_particle", cells.size(), [&](auto cell_idx) {
+          for (auto &p : cells[cell_idx]->particles())
+            f(p);
+        });
+  } else if (cells.size() == 1) {
+    auto &particles = cells.front()->particles();
+    Kokkos::parallel_for( // loop over particles
+        "for_each_local_particle", particles.size(),
+        [&](auto part_idx) { f(*(particles.begin() + part_idx)); });
+  }
+}
+#endif // SHARED_MEMORY_PARALLELISM

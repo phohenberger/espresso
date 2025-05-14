@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <cassert>
 #include <concepts>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -54,15 +55,17 @@
 #include <utility>
 #include <vector>
 
-// forward declaration to not have to import cabana
-#ifdef SHARED_MEMORY_PARALLELISM
-class CabanaData;
-#endif
+using ParticleUnaryOp = std::function<void(Particle &)>;
 
 template <typename Callable>
 concept ParticleCallback = requires(Callable c, Particle &p) {
   { c(p) } -> std::same_as<void>;
 };
+
+// forward declaration to not have to import cabana
+#ifdef SHARED_MEMORY_PARALLELISM
+class CabanaData;
+#endif
 
 namespace Cells {
 enum Resort : unsigned {
@@ -285,14 +288,26 @@ public:
   ParticleRange ghost_particles() const {
     return Cells::particles(decomposition().ghost_cells());
   }
+  /** @brief whether to use parallel version of @ref for_each_local_particle */
+  bool use_parallel_for_each_local_particle() const {
+#ifdef SHARED_MEMORY_PARALLELISM
+    return true;
+#else
+    return false;
+#endif
+  }
 
   /**
    * @brief Run a kernel on all local particles.
    * The kernel is assumed to be thread-safe.
    */
-  template <typename Kernel>
-    requires ParticleCallback<Kernel>
-  void for_each_local_particle(Kernel f) const {
+  void for_each_local_particle(ParticleUnaryOp &&f) const {
+#ifdef SHARED_MEMORY_PARALLELISM
+    if (use_parallel_for_each_local_particle()) {
+      parallel_for_each_particle_impl(decomposition().local_cells(), f);
+      return;
+    }
+#endif
     for (auto &p : local_particles()) {
       f(p);
     }
@@ -302,9 +317,7 @@ public:
    * @brief Run a kernel on all ghost particles.
    * The kernel is assumed to be thread-safe.
    */
-  template <typename Kernel>
-    requires ParticleCallback<Kernel>
-  void for_each_ghost_particle(Kernel f) const {
+  void for_each_ghost_particle(ParticleUnaryOp &&f) const {
     for (auto &p : ghost_particles()) {
       f(p);
     }
@@ -323,6 +336,11 @@ private:
   Cell const *particle_to_cell(const Particle &p) const {
     return decomposition().particle_to_cell(p);
   }
+
+#ifdef SHARED_MEMORY_PARALLELISM
+  void parallel_for_each_particle_impl(std::span<Cell *const> cells,
+                                       ParticleUnaryOp &f) const;
+#endif
 
 public:
   /**
