@@ -62,6 +62,7 @@ concept ParticleCallback = requires(Callable c, Particle &p) {
   { c(p) } -> std::same_as<void>;
 };
 
+
 // forward declaration to not have to import cabana
 #ifdef SHARED_MEMORY_PARALLELISM
 class CabanaData;

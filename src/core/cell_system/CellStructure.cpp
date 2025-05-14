@@ -385,4 +385,6 @@ void CellStructure::parallel_for_each_particle_impl(
         [&](auto part_idx) { f(*(particles.begin() + part_idx)); });
   }
 }
+
 #endif // SHARED_MEMORY_PARALLELISM
+
